@@ -1,21 +1,31 @@
-const register = (tag, component) => {
-	class InputElement extends HTMLElement {
+const register = (tag, component, mode) => {
+	class CustomElement extends HTMLElement {
 		constructor() {
 			super();
-			this.attachShadow({mode: "open"});
-			this.shadowRoot.append(component());
+			this.attachShadow({mode: mode ? mode : "open"});
+			this.shadowRoot.append(component(this));
 		}
 	};
 
-	window.customElements.define(tag, InputElement);
+	window.customElements.define(tag, CustomElement);
 };
 
-const element = (type, attributes) => {
+const element = (type, attributes, ...children) => {
 	const element = document.createElement(type);
+
 	for (const key in attributes) {
 		element[key] = attributes[key];
 	}
+
+	for (const child of children) {
+		element.append(child);
+	}
+
 	return element;
+};
+
+const style = (css) => {
+	return element("style", {textContent: css});
 };
 
 const state = initialValue => ({
