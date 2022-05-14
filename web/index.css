@@ -1,0 +1,15 @@
+body {
+
+}
+
+div.container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+input {
+	width: 50%;
+	max-width: 500px;
+	height: 3em;
+}
