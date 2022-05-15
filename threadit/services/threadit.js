@@ -24,3 +24,16 @@ const createThread = async (text) => {
   const json = await resp.json();
   return json.data;
 };
+
+const createComment = async (parent, text) => {
+  const resp = await fetch(`${url}/comments/create`, {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({parent: parent, text: text}),
+  });
+
+  const json = await resp.json();
+  return json.data;
+};
