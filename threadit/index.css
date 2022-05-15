@@ -1,0 +1,19 @@
+body {
+  max-width: 800px;
+  margin: 0 auto;
+  background: gray;
+  font-size: 2em;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin: 25px 0;
+}
+
+.card {
+  padding: 25px;
+  background: white;
+  border: 1px solid gray;
+  border-radius: 5px;
+}
