@@ -2,6 +2,9 @@ const register = (tag, component, mode) => {
   class CustomElement extends HTMLElement {
     constructor() {
       super();
+    }
+
+    connectedCallback() {
       this.attachShadow({mode: mode ? mode : "open"});
       this.shadowRoot.append(component(this));
     }
@@ -14,7 +17,11 @@ const element = (type, attributes, ...children) => {
   const element = document.createElement(type);
 
   for (const key in attributes) {
-    element[key] = attributes[key];
+    if (key in element) {
+      element[key] = attributes[key];
+    } else {
+      element.setAttribute(key, attributes[key]);
+    }
   }
 
   for (const child of children) {
@@ -78,3 +85,14 @@ const route = routes => {
 
   return null;
 };
+
+const which = (state, e1, e2) => {
+  state.subscribe(which => {
+    e1.hidden = !which;
+    e2.hidden = which;
+  });
+
+  return element("div", {}, e1, e2);
+};
+
+export {style, element, state, register, route, which};

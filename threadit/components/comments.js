@@ -1,89 +1,84 @@
+import { style, element, state, register, which } from "../tiny.js";
+import { getComments, createComment } from "../services/threadit.js";
+import { post } from "./post.js";
 
-const css = style(`
-  button {
-    margin-top: 10px;
-    display: block;
-    background: purple;
-    color: white;
-    height: 40px;
-    width: 80px;
-    border: none;
-    border-radius: 5px;
-    font-size: 0.9em;
-  }
+const commentsState = state([])
 
-  button:hover {
-    cursor: pointer;
-  }
-`);
-
-
-const comments = id => {
-  const commentsState = state([])
-
-  const fetchComments = () => {
+const fetchComments = id => {
     getComments(id).then(comments => {
       commentsState.set(comments);
     });
-  };
-  fetchComments();
+}
 
-  const commentChain = (comments, i) => {
+const commentChain = (id, comments, i) => {
+  const comment = comments[i];
 
-    const comment = comments[i];
+  const children = element("div");
 
-    const text = element("p", {
-      textContent: comment.text,
-    });
+  for (let j = 0; j < comment.children.length; j++) {
+    children.append(commentChain(id, comments, i+j+1));
+  }
 
-    const children = element("div");
+  const showReplyButton = state(true);
 
-    for (let j = 0; j < comment.children.length; j++) {
-      children.append(commentChain(comments, i+j+1));
-    }
-
-    const showReplyButton = state(true);
-
-    const reply = element("div", {
-      textContent: "reply",
-      onclick: () => {
-        showReplyButton.set(!showReplyButton.get());
-      },
-    });
-
-    const replyForm = post(txt => {
-      createComment(comment.id, txt).then(() => fetchComments())
-    });
-
-    showReplyButton.subscribe(show => {
-      reply.hidden = !show;
-      replyForm.hidden = show;
-    });
-
-    return element("div", {
-      "style": "display: flex"
+  const reply = element("div", {
+    className: "reply",
+    textContent: "reply",
+    onclick: () => {
+      showReplyButton.set(!showReplyButton.get());
     },
-      element("div", { className: "vertical-line" }),
-      element("div", {},
-        text,
-        element("hr"),
-        reply,
-        replyForm,
-        children,
-      )
-    );
-  };
+  });
 
+  const replyForm = post(txt => {
+    createComment(comment.id, txt).then(() => fetchComments(id))
+  });
 
-  const container = element("div");
+  return element("div", {
+    "style": "display: flex"
+  },
+    element("div", { className: "vertical-line" }),
+    element("div", {},
+      element("p", { textContent: comment.text }),
+      element("hr"),
+      which(showReplyButton, reply, replyForm),
+      children,
+    )
+  );
+};
+
+const css = `
+  .vertical-line {
+    border-left: 2px solid black;
+    margin-right: 10px;
+  }
+
+  .reply:hover {
+    text-decoration: underline;
+    cursor: pointer;
+  }
+`;
+
+register("ti-comments", root => {
+  const id = root.getAttribute("thread-id");
+  fetchComments(id);
+
+  const container = element("div", {});
   commentsState.subscribe(comments => {
     container.innerHTML = "";
 
     for (let i = 0; i < comments.length; i++) {
       if (comments[i].parent_id) continue;
 
-      container.append(commentChain(comments, i));
+      container.append(commentChain(id, comments, i));
     }
   });
-  return container;
+
+  return element("div", {}, container, style(css));
+});
+
+export const comments = id => {
+  const comments = element("ti-comments", {
+    "thread-id": id,
+  });
+  return comments;
 };

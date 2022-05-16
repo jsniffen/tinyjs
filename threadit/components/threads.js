@@ -1,3 +1,7 @@
+import { post } from "./post.js";
+import { style, element, state, register } from "../tiny.js";
+import { createThread, getThreads } from "../services/threadit.js";
+
 const threadsState = state([]);
 
 const fetchThreads = async () => {
@@ -25,32 +29,6 @@ const threadsStyles = style(`
   }
 `);
 
-/*
-const post = () => {
-  const input = element("textarea", {
-    onkeydown: e => {
-      if (e.code === "Enter") {
-        submit();
-      }
-    },
-  });
-
-  const post = element("button", {
-    textContent: "Post",
-    onclick: e => {
-      submit();
-    },
-  });
-
-  const submit = () => {
-    const txt = input.value;
-    input.value = "";
-    createThread(txt).then(() => fetchThreads());
-  };
-
-  return element("div", {}, input, post);
-};
-*/
 
 const row = thread => {
   const text = element("a", {
@@ -89,3 +67,5 @@ const threads = () => {
     form,
   );
 };
+
+export { threads };
