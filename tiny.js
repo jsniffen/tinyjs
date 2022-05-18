@@ -51,39 +51,49 @@ const state = initialValue => ({
   listeners: [],
 });
 
-const route = routes => {
-  const pathParts = window.location.pathname.split("/");
+const router = routes => {
+  const container = element("div");
 
-  for (const route in routes) {
-    const routeParts = route.split("/");
+  location.route.subscribe(path => {
+    container.innerHTML = "";
 
-    if (routeParts[0] === "_") {
-      return routes[route]();
-    }
-    
-    if (pathParts.length !== routeParts.length) continue;
+    const pathParts = path.split("/");
+    console.log(pathParts);
 
-    const args = {};
+    for (const route in routes) {
+      const routeParts = route.split("/");
 
-    let match = true;
-    for (let i = 1; i < routeParts.length; i++) {
-      const routePart = routeParts[i];
-      if (routePart.length == 0) break;
+      if (routeParts[0] === "_") {
+        container.append(routes[route]());
+        return;
+      }
+      
+      if (pathParts.length !== routeParts.length) continue;
 
-      if (routePart[0] == ":") {
-        args[routePart.substring(1, routePart.length)] = pathParts[i];
-      } else if (routeParts[i] !== pathParts[i]) {
-        match = false;
-        break;
+      const args = {};
+
+      let match = true;
+      for (let i = 1; i < routeParts.length; i++) {
+        const routePart = routeParts[i];
+        if (routePart.length == 0) break;
+
+        if (routePart[0] == ":") {
+          args[routePart.substring(1, routePart.length)] = pathParts[i];
+        } else if (routeParts[i] !== pathParts[i]) {
+          match = false;
+          break;
+        }
+      }
+
+      if (match) {
+        console.log("Match");
+        container.append(routes[route](args));
+        return;
       }
     }
+  });
 
-    if (match) {
-      return routes[route](args);
-    }
-  }
-
-  return null;
+  return container;
 };
 
 const which = (state, e1, e2) => {
@@ -95,4 +105,19 @@ const which = (state, e1, e2) => {
   return element("div", {}, e1, e2);
 };
 
-export {style, element, state, register, route, which};
+const location = {
+  route: state(window.location.pathname),
+  go: function(path) {
+    window.history.pushState({}, "", path);
+    this.route.set(path);
+  },
+  back: function() {
+    window.history.back();
+  },
+  forward: function() {
+    window.history.forward();
+  },
+};
+window.addEventListener("popstate", () => location.route.set(window.location.pathname));
+
+export {style, element, state, register, router, which, location};

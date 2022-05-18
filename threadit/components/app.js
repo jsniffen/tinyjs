@@ -1,4 +1,4 @@
-import { route, style, element, state, register } from "../tiny.js";
+import { router, style, element, state, register, location } from "../tiny.js";
 import { comments } from "./comments.js";
 import { threads } from "./threads.js";
 import { post } from "./post.js";
@@ -13,14 +13,13 @@ const appCss = style(`
 `);
 
 register("ti-app", (_) => {
-  const component = route({
-    "/thread/:id": args => comments(args.id),
-    "_": () => threads(),
-  });
 
   return element("div", { className: "card" },
     appCss,
-    component
+    router({
+      "/thread/:id": args => comments(args.id),
+      "_": () => threads(),
+    }),
   );
 });
  
