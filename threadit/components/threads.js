@@ -1,5 +1,5 @@
 import { post } from "./post.js";
-import { style, element, state, register, location } from "../tiny.js";
+import { style, element, state, register, route } from "../tiny.js";
 import { createThread, getThreads } from "../services/threadit.js";
 
 const threadsState = state([]);
@@ -33,7 +33,7 @@ const threadsStyles = style(`
 const row = thread => {
   const text = element("a", {
     onclick: () => {
-      location.go(`/thread/${thread.id}`);
+      route.go(`/thread/${thread.id}`);
     },
     textContent: thread.text.substring(0, 150) + "...",
   });

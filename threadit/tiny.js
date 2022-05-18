@@ -54,11 +54,10 @@ const state = initialValue => ({
 const router = routes => {
   const container = element("div");
 
-  location.route.subscribe(path => {
+  route.subscribe(path => {
     container.innerHTML = "";
 
     const pathParts = path.split("/");
-    console.log(pathParts);
 
     for (const route in routes) {
       const routeParts = route.split("/");
@@ -86,7 +85,6 @@ const router = routes => {
       }
 
       if (match) {
-        console.log("Match");
         container.append(routes[route](args));
         return;
       }
@@ -105,11 +103,11 @@ const which = (state, e1, e2) => {
   return element("div", {}, e1, e2);
 };
 
-const location = {
-  route: state(window.location.pathname),
+const route = {
+  ...state(window.location.pathname),
   go: function(path) {
     window.history.pushState({}, "", path);
-    this.route.set(path);
+    this.set(path);
   },
   back: function() {
     window.history.back();
@@ -118,6 +116,6 @@ const location = {
     window.history.forward();
   },
 };
-window.addEventListener("popstate", () => location.route.set(window.location.pathname));
+window.addEventListener("popstate", () => route.set(window.location.pathname));
 
-export {style, element, state, register, router, which, location};
+export {style, element, state, register, router, which, route};

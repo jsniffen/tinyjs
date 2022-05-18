@@ -1,4 +1,4 @@
-import { router, style, element, state, register, location } from "../tiny.js";
+import { router, style, element, state, register } from "../tiny.js";
 import { comments } from "./comments.js";
 import { threads } from "./threads.js";
 import { post } from "./post.js";
@@ -13,7 +13,6 @@ const appCss = style(`
 `);
 
 register("ti-app", (_) => {
-
   return element("div", { className: "card" },
     appCss,
     router({
