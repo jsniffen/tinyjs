@@ -51,6 +51,14 @@ const state = initialValue => ({
   listeners: [],
 });
 
+const newState = initialValue => {
+  const st = state(initialValue);
+  // const update = (updater) => {
+    // st.set(updater(st.get()));
+  // };
+  return [st.subscribe, null];
+}
+
 const router = routes => {
   const container = element("div");
 
@@ -118,4 +126,4 @@ const route = {
 };
 window.addEventListener("popstate", () => route.set(window.location.pathname));
 
-export {style, element, state, register, router, which, route};
+export {newState, style, element, state, register, router, which, route};

@@ -1,4 +1,4 @@
-const register = (tag, component, mode) => {
+export const register = (tag, component, mode) => {
   class CustomElement extends HTMLElement {
     constructor() {
       super();
@@ -13,56 +13,134 @@ const register = (tag, component, mode) => {
   window.customElements.define(tag, CustomElement);
 };
 
-const element = (type, attributes, ...children) => {
+const _sub = (func, states) => {
+  for (const [onState] of states) {
+    onState(_ => {
+      return func(states.map(([onState]) => onState(null, true)));
+    })
+  }
+  func(states.map(([onState]) => onState(null, true)));
+};
+
+export const element = (type, attributes, ...children) => {
   const element = document.createElement(type);
 
-  for (const key in attributes) {
-    if (key in element) {
-      element[key] = attributes[key];
-    } else {
-      element.setAttribute(key, attributes[key]);
+  if (attributes instanceof HTMLElement || typeof attributes === "function") {
+    children = [attributes].concat(children);
+  } else {
+    for (const key in attributes) {
+      const value = attributes[key];
+
+      if (typeof value === "function") {
+        const func = value.toString();
+        const params = func.substring(0, func.indexOf("="));
+        const args = params.replace(/\(|\)|\s/g, "")
+          .split(",")
+          .filter(arg => arg.length > 0);
+
+        let match = args.length > 0;
+        for (const arg of args) {
+          if (!(arg in states)) {
+            match = false;
+            break;
+          }
+        }
+
+        if (match) {
+          _sub(x => {
+            element[key] = value(...x);
+            return element;
+          }, args.map(arg => states[arg]));
+          continue;
+        }
+      }
+
+      if (key in element) {
+        element[key] = attributes[key];
+      } else {
+        element.setAttribute(key, attributes[key]);
+      }
     }
   }
-
+  
   for (const child of children) {
+    if (typeof child === "function") {
+      const func = child.toString();
+      const params = func.substring(0, func.indexOf("="));
+      const args = params.replace(/\(|\)|\s/g, "")
+        .split(",")
+        .filter(arg => arg.length > 0);
+
+      let match = true;
+      for (const arg of args) {
+        if (!(args in states)) {
+          match = false;
+          break;
+        }
+      }
+
+      if (match) {
+        _sub(x => {
+          element.innerHTML = "";
+          const e = child(...x);
+          if (Array.isArray(e)) {
+            element.replaceChildren(...e);
+          } else {
+            element.replaceChildren(e);
+          }
+          return element;
+        }, args.map(arg => states[arg]));
+        continue;
+      }
+    }
+
     element.append(child);
   }
 
   return element;
 };
 
-const style = (css) => {
+export const style = (css) => {
   return element("style", {textContent: css});
 };
 
-const state = initialValue => ({
-  value: initialValue,
-  get: function() {
-    return this.value;
-  },
-  set: function(newValue) {
-    this.value = newValue;
-    this.listeners.forEach(fn => fn(newValue));
-  },
-  subscribe: function(fn) {
-    fn(this.value);
-    this.listeners.push(fn);
-  },
-  _subscribe: function(fn) {
-    this.listeners.push(fn);
-  },
-  listeners: [],
-});
+const states = {}
+export const state = (value, name) => {
+  let subscribers = [];
 
-const subscribeAll = (func, states) => {
-  for (const state of states) {
-    state._subscribe(_ => {
-      func(states.map(state => state.get()));
-    });
+  const onState = (func, get) => {
+    if (get) {
+      return value;
+    }
+
+    subscribers.push(func);
+    return func(value);
   }
-  func(states.map(state => state.get()));
+
+  const setState = func => {
+    if (typeof func === "function") {
+      value = func(value);
+    } else {
+      value = func
+    }
+
+    subscribers.forEach(func => func(value))
+  }
+
+  states[name] = [onState, setState];
+  return states[name];
+}
+
+export const subscribe = (func, onStates) => {
+  for (const onState of onStates) {
+    onState(_ => {
+      return func(...onStates.map(onState => onState(null, true)));
+    })
+  }
+  func(...onStates.map(onState => onState(null, true)));
 };
 
+/*
 const router = routes => {
   const container = element("div");
 
@@ -111,15 +189,6 @@ const router = routes => {
   return container;
 };
 
-const which = (state, e1, e2) => {
-  state.subscribe(which => {
-    e1.hidden = !which;
-    e2.hidden = which;
-  });
-
-  return element("div", {}, e1, e2);
-};
-
 const route = {
   ...state(window.location.hash || window.location.pathname),
   go: function(path) {
@@ -137,5 +206,6 @@ const route = {
   },
 };
 window.addEventListener("popstate", () => route.set(window.location.pathname));
+*/
 
-export {style, element, state, register, router, which, route, subscribeAll};
+// export {style, element, state, register, router, which, route, subscribeAll};
