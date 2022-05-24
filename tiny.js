@@ -48,8 +48,20 @@ const state = initialValue => ({
     fn(this.value);
     this.listeners.push(fn);
   },
+  _subscribe: function(fn) {
+    this.listeners.push(fn);
+  },
   listeners: [],
 });
+
+const subscribeAll = (func, states) => {
+  for (const state of states) {
+    state._subscribe(_ => {
+      func(states.map(state => state.get()));
+    });
+  }
+  func(states.map(state => state.get()));
+};
 
 const router = routes => {
   const container = element("div");
@@ -57,16 +69,19 @@ const router = routes => {
   route.subscribe(path => {
     container.innerHTML = "";
 
-    const pathParts = path.split("/");
+    const pathParts = path.split("/")
+      .filter(part => part !== "" && part !== "#");
+
 
     for (const route in routes) {
-      const routeParts = route.split("/");
+      const routeParts = route.split("/")
+        .filter(part => part !== "" && part !== "#");
 
-      if (routeParts[0] === "_") {
+      if (routeParts[0] === "*") {
         container.append(routes[route]());
         return;
       }
-      
+
       if (pathParts.length !== routeParts.length) continue;
 
       const args = {};
@@ -76,7 +91,9 @@ const router = routes => {
         const routePart = routeParts[i];
         if (routePart.length == 0) break;
 
-        if (routePart[0] == ":") {
+        if (routePart[0] == "*") {
+          continue
+        } else if (routePart[0] == ":") {
           args[routePart.substring(1, routePart.length)] = pathParts[i];
         } else if (routeParts[i] !== pathParts[i]) {
           match = false;
@@ -104,8 +121,11 @@ const which = (state, e1, e2) => {
 };
 
 const route = {
-  ...state(window.location.pathname),
+  ...state(window.location.hash || window.location.pathname),
   go: function(path) {
+    window.location = path;
+  },
+  pushState: function(path) {
     window.history.pushState({}, "", path);
     this.set(path);
   },
@@ -118,4 +138,4 @@ const route = {
 };
 window.addEventListener("popstate", () => route.set(window.location.pathname));
 
-export {style, element, state, register, router, which, route};
+export {style, element, state, register, router, which, route, subscribeAll};
