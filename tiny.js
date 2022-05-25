@@ -40,15 +40,36 @@ export const style = css => {
   return element("style", {textContent: css});
 };
 
-export const state = value => {
-  let subscribers = [];
+export const state = (value, name) => {
+  const elementListeners = new Map();
+  const staticListeners = [];
 
-  const onState = (func, mode) => {
+  const clearElementListeners = () => {
+    elementListeners.forEach((func, element) => {
+      // console.log(element, element.isConnected, element.wasOnDom, name);
+      if (element.isConnected) {
+        element.wasOnDom = true;
+      }
+
+      if (!element.isConnected && element.wasOnDom) {
+        elementListeners.delete(element);
+      }
+    });
+  }
+
+  const onState = (func, element, mode) => {
+    clearElementListeners();
+
     if (mode === "GET") {
       return value;
     }
 
-    subscribers.push(func);
+    if (element) {
+      elementListeners.set(element, func);
+    } else {
+      staticListeners.push(func);
+    }
+
     if (mode === "DEFER") {
       return;
     }
@@ -57,25 +78,28 @@ export const state = value => {
   }
 
   const setState = func => {
+    clearElementListeners();
+
     if (typeof func === "function") {
       value = func(value);
     } else {
       value = func
     }
 
-    subscribers.forEach(func => func(value))
+    elementListeners.forEach(func => func(value))
+    staticListeners.forEach(func => func(value))
   }
 
   return [onState, setState];
 }
 
-export const subscribe = (func, onStates) => {
+export const subscribe = (func, onStates, element) => {
   for (const onState of onStates) {
     onState(_ => {
-      func(...onStates.map(onState => onState(null, "GET")));
-    }, "DEFER");
+      func(...onStates.map(onState => onState(null, null, "GET")));
+    }, element, "DEFER");
   }
-  func(...onStates.map(onState => onState(null, "GET")));
+  func(...onStates.map(onState => onState(null, null, "GET")));
 };
 
 export const route = () => {
@@ -111,7 +135,7 @@ export const router = (routes, onRoute) => {
   const container = element("div");
 
   onRoute(path => {
-    container.innerHTML = "";
+    //container.innerHTML = "";
 
     const pathParts = path.split("/")
       .filter(part => part !== "" && part !== "#");
@@ -121,7 +145,7 @@ export const router = (routes, onRoute) => {
         .filter(part => part !== "" && part !== "#");
 
       if (routeParts[0] === "*") {
-        container.append(routes[route]());
+        container.replaceChildren(routes[route]());
         return;
       }
 
@@ -145,7 +169,7 @@ export const router = (routes, onRoute) => {
       }
 
       if (match) {
-        container.append(routes[route](args));
+        container.replaceChildren(routes[route](args));
         return;
       }
     }
@@ -153,22 +177,3 @@ export const router = (routes, onRoute) => {
 
   return container;
 };
-
-/*
-const route = {
-  ...state(window.location.hash || window.location.pathname),
-  go: function(path) {
-    window.location = path;
-  },
-  pushState: function(path) {
-    window.history.pushState({}, "", path);
-    this.set(path);
-  },
-  back: function() {
-    window.history.back();
-  },
-  forward: function() {
-    window.history.forward();
-  },
-};
-*/

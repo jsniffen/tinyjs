@@ -1,23 +1,14 @@
 import { container, element, register, route, router, state, subscribe } from "./tiny.js";
 
-const counter = onCount => {
-  const div = element("div");
-
-  onCount(count => div.textContent = count);
-
-  return div;
-};
-
-const add = (onAdder, setCount, setHistory) => {
+const add = (onAdder, setCount) => {
   const button =  element("button");
 
   onAdder(adder => {
     button.textContent = `Add ${adder}`;
     button.onclick = () => {
       setCount(count => count + adder);
-      setHistory(history => history.concat([`Added ${adder}`]));
     };
-  });
+  }, button);
 
   return button;
 };
@@ -31,52 +22,70 @@ const textInput = setAdder => {
   return input;
 }
 
-const list = onHistory => {
-  const ul = element("ul");
+const rootCount = onCount => {
+  const div = element("div");
+  onCount(count => {
+    console.log("Root handling count");
+    div.textContent = `Root: ${count}`;
+    return div;
+  }, div);
+  return div;
+};
 
-  onHistory(history => {
-    const lis = history.map(entry => {
-      return element("li", { textContent: entry });
-    });
+const aCount = (onCount, onLoading) => {
+  const div = element("div");
 
-    ul.replaceChildren(...lis);
-  });
+  subscribe((count, loading) => {
+    console.log("A handling count and loading");
+    div.textContent = loading ? "Loading" : `A: ${count}`;
+  }, [onCount, onLoading], div);
 
-  return ul;
-}
+  return div;
+};
+
+const bCount = onCount => {
+  const div = element("div");
+  onCount(count => {
+    console.log("B handling count");
+    div.textContent = `B: ${count}`;
+  }, div);
+  return div;
+};
 
 register("tiny-app", (root) => {
   const [onAdder, setAdder] = state(1);
-  const [onCount, setCount] = state(0);
-  const [onHistory, setHistory] = state([]);
-
+  const [onCount, setCount] = state(0, "count");
+  const [onLoading, setLoading] = state(false, "loading");
   const { pushState, onRoute } = route();
 
-  const ele = router({
-    "/a": () => element("div", { textContent: "a" }),
-    "/b": () => element("div", { textContent: "b" }),
-    "*": () => element("div", { textContent: "*" }),
+  const count = router({
+    "/a": () => aCount(onCount, onLoading),
+    "/b": () => bCount(onCount, onLoading),
+    "*": () => rootCount(onCount, onLoading),
   }, onRoute);
 
-  onRoute(console.log);
-
   return container(
-    counter(onCount),
     textInput(setAdder),
-    add(onAdder, setCount, setHistory),
-    list(onHistory),
-    ele,
+    add(onAdder, setCount),
+    count,
     element("button", {
-      textContent: "a",
+      textContent: "Root",
+      onclick: () => pushState("/"),
+    }),
+    element("button", {
+      textContent: "A",
       onclick: () => pushState("/#/a"),
     }),
     element("button", {
-      textContent: "b",
+      textContent: "B",
       onclick: () => pushState("/#/b"),
     }),
     element("button", {
-      textContent: "*",
-      onclick: () => pushState("/"),
+      textContent: "Load",
+      onclick: () => {
+        setLoading(true);
+        setTimeout(() => setLoading(false), 5000);
+      },
     }),
   );
 });
