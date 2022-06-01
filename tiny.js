@@ -46,7 +46,6 @@ export const state = (value, name) => {
 
   const clearElementListeners = () => {
     elementListeners.forEach((func, element) => {
-      // console.log(element, element.isConnected, element.wasOnDom, name);
       if (element.isConnected) {
         element.wasOnDom = true;
       }

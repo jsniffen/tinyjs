@@ -1,4 +1,43 @@
-import { container, element, register, route, router, state, subscribe } from "./tiny.js";
+import { container, element, register, route, router, state, subscribe, style } from "./tiny.js";
+
+
+register("tiny-code", root => {
+  const css = style(`
+    .code {
+      background: #FFFFD8;
+      color: black;
+      border: 1px solid black;
+      padding: 25px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 0.75em;
+      white-space: pre-wrap;
+    }
+  `);
+
+  let trimLeft = 0;
+  for (let c of root.textContent) {
+    if (c == "\n") {
+      continue
+    } else if (c === " ") {
+      trimLeft++
+      continue
+    } else {
+      break
+    }
+  }
+
+  let code = root.textContent
+    .split("\n")
+    .slice(1)
+    .map(s => s.substring(trimLeft))
+    .join("\n")
+
+  return element("div", {}, 
+    css,
+    element("div", { className: "code", textContent: code }),
+  )
+});
 
 const add = (onAdder, setCount) => {
   const button =  element("button");

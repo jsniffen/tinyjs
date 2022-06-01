@@ -1,7 +1,66 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <link rel="stylesheet" href="index.css" />
+  </head>
   <body>
-    <tiny-app></tiny-app>
+    <section>
+      <h1>TinyJS</h1>
+      <p>
+        TinyJS is a simple Javascript framework.
+      </p>
+    </section>
+
+    <section>
+      <h1>Elements</h1>
+      <p>You can create elements using the element function.</p>
+      <tiny-code>
+        import { element } from "./tiny.js"
+
+        const button = element("button", {
+          textContent: "Click me!"
+        })
+      </tiny-code>
+    </section>
+
+    <section>
+      <h1>Web Components</h1>
+      <p>You can register web components using the register function.</p>
+      <tiny-code>
+        import { element, register } from "./tiny.js"
+
+        register("tiny-app", root => {
+          return element("div", { textContent: "hello world" })
+        })
+      </tiny-code>
+    </section>
+
+    <section>
+      <h1>State</h1>
+      <p>You can create stateful components using the state function.</p>
+      <tiny-code>
+        import { element, state } from "./tiny.js";
+
+        const counter = () => {
+          const [onCount, setCount] = state(0)
+
+          const button = element("button", {
+            onclick: setCount(count => count + 1)
+          })
+
+          const div = element("div")
+          onCount(count => {
+            div.textContent = `Count: ${count}`
+          }, div)
+
+          return element("div", {},
+            div,
+            button
+          )
+        }
+      </tiny-code>
+    </section>
+
     <script type="module" src="index.js"></script>
   </body>
 </html>
