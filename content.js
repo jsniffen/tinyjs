@@ -1,4 +1,4 @@
-import { element, state, route, router } from "./tiny.js"
+import { element, mount, state, route, router } from "./tiny.js"
 
 export const sections = [
   {
@@ -12,15 +12,18 @@ export const sections = [
     title: "Elements",
     text: "TinyJS allows you to create elements with the element function.",
     link: "#/elements",
-    codeName: "myButton",
+    divId: "my-button",
     code: () => {
+      // import { element, mount } from "./tiny.js"
+      //
       const myButton = () => {
         return element("button", {
           textContent: "Click me!",
           onclick: () => alert("I've been clicked!"),
         })
       }
-      return myButton()
+
+      mount("my-button", myButton)
     },
   },
   {
@@ -28,7 +31,10 @@ export const sections = [
     title: "State",
     text: "TinyJS has functions for creating and subscribing to state objects.",
     link: "#/state",
+    divId: "my-counter",
     code: () => {
+      // import { element, mount, state } from "./tiny.js"
+      //
       const counter = () => {
         const [onCount, setCount] = state(0)
 
@@ -47,66 +53,71 @@ export const sections = [
           onclick: () => setCount(0),
         })
 
-        const div = element("div")
+        const status = element("div")
+
         onCount(count => {
-          div.textContent = `Count: ${count}`
-        }, div)
+          status.textContent = `Count: ${count}`
+        }, status)
 
         return element("div", {},
-          div,
+          status,
           addOne,
           subtractOne,
           reset,
         )
       }
 
-      return counter()
+      mount("my-counter", counter)
     },
   },
   {
     id: "router",
     title: "Router",
-    text: "TinyJS has a built in router that allows you to navigate easily write SPAs.",
+    text: "TinyJS has a built in router that allows you to easily write SPAs.",
     link: "#/router",
+    divId: "my-router",
     code: () => {
+      // import { element, mount, route, router } from "./tiny.js"
+      //
       const myRouter = () => {
         const { onRoute, go } = route()
 
-        const select = element("select", {
-          onchange: e => {
-            go(e.target.value)
-          }
-        },
-          element("option", {
-            textContent: "A",
-            value: "/tinyjs/#/a/test",
+        const goToA = element("button", {
+          textContent: "A",
+          onclick: () => go("/tinyjs/#/a/test"),
+        })
+
+        const goToB = element("button", {
+          textContent: "B",
+          onclick: () => go("/tinyjs/#/b"),
+        })
+
+        const goToDefault = element("button", {
+          textContent: "Default",
+          onclick: () => go("/tinyjs/#/"),
+        })
+
+        const div = router({
+          "/a/:id": args => element("div", {
+            textContent: `route a: ${args.id}`
           }),
-          element("option", {
-            textContent: "B",
-            value: "/tinyjs/#/b",
+          "/b": () => element("div", {
+            textContent: `route b`
           }),
-          element("option", {
-            textContent: "C",
-            value: "/tinyjs/#/c",
+          "*": () => element("div", {
+            textContent: `default route`
           }),
-        )
+        }, onRoute)
 
         return element("div", {},
-          select,
-          router({
-            "/a/:id": args => element("div", {
-              textContent: `route a: ${args.id}`
-            }),
-            "/b": args => element("div", {
-              textContent: `route b`
-            }),
-            "*": args => element("div", {
-              textContent: `default route`
-            }),
-          }, onRoute),
+          div,
+          goToA,
+          goToB,
+          goToDefault,
         )
       }
-      return myRouter()
+
+      mount("my-router", myRouter)
     },
   },
 ]

@@ -1,6 +1,6 @@
 export const mount = (id, component) => {
-  const element = document.getElementById(id)
-  element.append(component(element))
+  const container = document.getElementById(id)
+  if (container) container.append(component())
 }
 
 export const register = (tag, component, mode) => {
@@ -138,9 +138,11 @@ export const route = () => {
 export const router = (routes, onRoute) => {
   const container = element("div");
 
-  onRoute(path => {
-    //container.innerHTML = "";
+  if (!onRoute) {
+    onRoute = route().onRoute
+  }
 
+  onRoute(path => {
     const pathParts = path.split("/")
       .filter(part => part !== "" && part !== "#");
 

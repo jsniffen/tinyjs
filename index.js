@@ -1,5 +1,6 @@
 import { mount, container, element, register, route, router, state, subscribe, style } from "./tiny.js"
 import { sections } from "./content.js"
+import { home } from "./docs/home.js"
 
 const [onActiveSection, setActiveSection] = state(0)
 
@@ -13,7 +14,7 @@ const example = (code) => {
 
   let textContent = code.toString()
     .split("\n")
-    .slice(1, -2)
+    .slice(1, -1)
 
   let trimLeft = 0;
   for (let c of textContent[0]) {
@@ -27,19 +28,21 @@ const example = (code) => {
     }
   }
 
-  textContent.push("\n")
-  textContent.push("\n")
-
   textContent = textContent
     .map(line => line.substring(trimLeft))
+    .map(line => {
+      if (line[0] === "/" && line[1] === "/") {
+        return line.substring(3)
+      }
+      return line
+    })
     .join("\n")
+
 
   return element("div", {
     className: "code",
     textContent,
-  },
-    code(),
-  )
+  })
 }
 
 const sidebar = () => {
@@ -48,8 +51,6 @@ const sidebar = () => {
   const buttons = []
   for (let i = 0; i < sections.length; i++) {
     const { title, text, link } = sections[i]
-
-    console.log(link)
 
     const button = element("button", {
       textContent: sections[i].title,
@@ -74,17 +75,24 @@ const sidebar = () => {
   return div
 }
 
+const placeholder = id => {
+  if (!id) return ""
+
+  return element("div", { id, className: "placeholder" })
+}
+
 const content = () => {
   const div = element("div")
 
   for (let section of sections) {
-    const { id, code, title, text } = section
+    const { id, code, title, text, divId } = section
 
     div.append(
       element("section", { id }, 
         element("h1", { textContent: title }),
         element("p", { textContent: text }),
         example(code),
+        placeholder(divId),
       )
     )
   }
@@ -92,7 +100,7 @@ const content = () => {
   return div
 }
 
-mount("tiny-app", root => {
+mount("tiny-app", () => {
   return element("div", {
     className: "flex flex-row"
   },
@@ -100,3 +108,7 @@ mount("tiny-app", root => {
     content(),
   )
 })
+
+for (const section of sections) {
+  if (section.code) section.code()
+}

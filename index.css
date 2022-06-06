@@ -50,3 +50,9 @@ body {
 .sidebar button.active {
   text-decoration: underline;
 }
+
+.placeholder {
+  margin-top: 1em;
+  font-family: monospace;
+  font-size: 0.75em;
+}
