@@ -32,9 +32,19 @@ export const sections = [
       const counter = () => {
         const [onCount, setCount] = state(0)
 
-        const button = element("button", {
+        const addOne = element("button", {
           textContent: "Add 1",
           onclick: () => setCount(count => count + 1),
+        })
+
+        const subtractOne = element("button", {
+          textContent: "Subtract 1",
+          onclick: () => setCount(count => count - 1),
+        })
+
+        const reset = element("button", {
+          textContent: "Reset to 0",
+          onclick: () => setCount(0),
         })
 
         const div = element("div")
@@ -44,7 +54,9 @@ export const sections = [
 
         return element("div", {},
           div,
-          button
+          addOne,
+          subtractOne,
+          reset,
         )
       }
 
@@ -67,15 +79,15 @@ export const sections = [
         },
           element("option", {
             textContent: "A",
-            value: "/#/a/test",
+            value: "/tinyjs/#/a/test",
           }),
           element("option", {
             textContent: "B",
-            value: "/#/b",
+            value: "/tinyjs/#/b",
           }),
           element("option", {
             textContent: "C",
-            value: "/#/c",
+            value: "/tinyjs/#/c",
           }),
         )
 
