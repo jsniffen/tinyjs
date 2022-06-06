@@ -1,22 +1,22 @@
-import { container, element, register, route, router, state, subscribe, style } from "./tiny.js";
+import { mount, container, element, register, route, router, state, subscribe, style } from "./tiny.js"
+import { sections } from "./content.js"
 
+const [onActiveSection, setActiveSection] = state(0)
 
-register("tiny-code", root => {
-  const css = style(`
-    .code {
-      background: #FFFFD8;
-      color: black;
-      border: 1px solid black;
-      padding: 25px;
-      border-radius: 5px;
-      font-family: monospace;
-      font-size: 0.75em;
-      white-space: pre-wrap;
-    }
-  `);
+onActiveSection(section => {
+  const element = document.getElementById(sections[section].id)
+  if (element) element.scrollIntoView()
+})
+
+const example = (code) => {
+  if (!code) return ""
+
+  let textContent = code.toString()
+    .split("\n")
+    .slice(1, -2)
 
   let trimLeft = 0;
-  for (let c of root.textContent) {
+  for (let c of textContent[0]) {
     if (c == "\n") {
       continue
     } else if (c === " ") {
@@ -27,104 +27,76 @@ register("tiny-code", root => {
     }
   }
 
-  let code = root.textContent
-    .split("\n")
-    .slice(1)
-    .map(s => s.substring(trimLeft))
+  textContent.push("\n")
+  textContent.push("\n")
+
+  textContent = textContent
+    .map(line => line.substring(trimLeft))
     .join("\n")
 
-  return element("div", {}, 
-    css,
-    element("div", { className: "code", textContent: code }),
+  return element("div", {
+    className: "code",
+    textContent,
+  },
+    code(),
   )
-});
-
-const add = (onAdder, setCount) => {
-  const button =  element("button");
-
-  onAdder(adder => {
-    button.textContent = `Add ${adder}`;
-    button.onclick = () => {
-      setCount(count => count + adder);
-    };
-  }, button);
-
-  return button;
-};
-
-const textInput = setAdder => {
-  const input = element("input", {
-    onchange: e => {
-      setAdder(parseInt(e.target.value, 10));
-    },
-  });
-  return input;
 }
 
-const rootCount = onCount => {
-  const div = element("div");
-  onCount(count => {
-    console.log("Root handling count");
-    div.textContent = `Root: ${count}`;
-    return div;
-  }, div);
-  return div;
-};
+const sidebar = () => {
+  const div = element("div", { className: "flex flex-col sidebar" })
 
-const aCount = (onCount, onLoading) => {
-  const div = element("div");
+  const buttons = []
+  for (let i = 0; i < sections.length; i++) {
+    const { title, text, link } = sections[i]
 
-  subscribe((count, loading) => {
-    console.log("A handling count and loading");
-    div.textContent = loading ? "Loading" : `A: ${count}`;
-  }, [onCount, onLoading], div);
+    console.log(link)
 
-  return div;
-};
-
-const bCount = onCount => {
-  const div = element("div");
-  onCount(count => {
-    console.log("B handling count");
-    div.textContent = `B: ${count}`;
-  }, div);
-  return div;
-};
-
-register("tiny-app", (root) => {
-  const [onAdder, setAdder] = state(1);
-  const [onCount, setCount] = state(0, "count");
-  const [onLoading, setLoading] = state(false, "loading");
-  const { pushState, onRoute } = route();
-
-  const count = router({
-    "/a": () => aCount(onCount, onLoading),
-    "/b": () => bCount(onCount, onLoading),
-    "*": () => rootCount(onCount, onLoading),
-  }, onRoute);
-
-  return container(
-    textInput(setAdder),
-    add(onAdder, setCount),
-    count,
-    element("button", {
-      textContent: "Root",
-      onclick: () => pushState("/"),
-    }),
-    element("button", {
-      textContent: "A",
-      onclick: () => pushState("/#/a"),
-    }),
-    element("button", {
-      textContent: "B",
-      onclick: () => pushState("/#/b"),
-    }),
-    element("button", {
-      textContent: "Load",
+    const button = element("button", {
+      textContent: sections[i].title,
       onclick: () => {
-        setLoading(true);
-        setTimeout(() => setLoading(false), 5000);
-      },
-    }),
-  );
-});
+        setActiveSection(i)
+      }
+    })
+    buttons.push(button)
+    div.append(button)
+  }
+
+  onActiveSection(currentSection => {
+    buttons.forEach((button, i) => {
+      if (i === currentSection) {
+        button.classList.add("active")
+      } else {
+        button.classList.remove("active")
+      }
+    })
+  })
+
+  return div
+}
+
+const content = () => {
+  const div = element("div")
+
+  for (let section of sections) {
+    const { id, code, title, text } = section
+
+    div.append(
+      element("section", { id }, 
+        element("h1", { textContent: title }),
+        element("p", { textContent: text }),
+        example(code),
+      )
+    )
+  }
+
+  return div
+}
+
+mount("tiny-app", root => {
+  return element("div", {
+    className: "flex flex-row"
+  },
+    sidebar(),
+    content(),
+  )
+})

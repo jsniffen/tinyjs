@@ -1,3 +1,8 @@
+export const mount = (id, component) => {
+  const element = document.getElementById(id)
+  element.append(component(element))
+}
+
 export const register = (tag, component, mode) => {
   class CustomElement extends HTMLElement {
     constructor() {

@@ -8,7 +8,45 @@ body {
     font-size: 1.5em;
 }
 
-section {
+#tiny-app {
     width: 100%;
-    max-width: 800px;
+    max-width: 1000px;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-row {
+    flex-direction: row;
+}
+
+.flex-col {
+    flex-direction: column;
+}
+
+.code {
+  background: #FFFFD8;
+  color: black;
+  border: 1px solid black;
+  padding: 25px;
+  border-radius: 5px;
+  font-family: monospace;
+  font-size: 0.75em;
+  white-space: pre-wrap;
+}
+
+.underline {
+  text-decoration: underline;
+}
+
+.sidebar button {
+  background: none;
+  color: lightgray;
+  border: none;
+  font-size: 1em;
+}
+
+.sidebar button.active {
+  text-decoration: underline;
 }
