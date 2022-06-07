@@ -6,6 +6,13 @@ body {
     justify-content: center;
     color: lightgray;
     font-size: 1.5em;
+    padding: 0;
+    margin: 0;
+}
+
+.header {
+  font-weight: bold;
+  font-size: 2em;
 }
 
 #tiny-app {
@@ -23,6 +30,14 @@ body {
 
 .flex-col {
     flex-direction: column;
+}
+
+.flex-center {
+  align-items: center;
+}
+
+.flex-space-between {
+  justify-content: space-between;
 }
 
 .code {
@@ -55,4 +70,16 @@ body {
   margin-top: 1em;
   font-family: monospace;
   font-size: 0.75em;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  width: 100%;
+  padding: 25px;
 }

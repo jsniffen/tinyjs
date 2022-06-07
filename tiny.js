@@ -3,21 +3,6 @@ export const mount = (id, component) => {
   if (container) container.append(component())
 }
 
-export const register = (tag, component, mode) => {
-  class CustomElement extends HTMLElement {
-    constructor() {
-      super();
-    }
-
-    connectedCallback() {
-      this.attachShadow({mode: mode ? mode : "open"});
-      this.shadowRoot.append(component(this));
-    }
-  };
-
-  window.customElements.define(tag, CustomElement);
-};
-
 export const element = (type, attributes, ...children) => {
   const element = document.createElement(type);
 
@@ -35,14 +20,6 @@ export const element = (type, attributes, ...children) => {
   }
 
   return element;
-};
-
-export const container = (...children) => {
-  return element("div", {}, ...children);
-}
-
-export const style = css => {
-  return element("style", {textContent: css});
 };
 
 export const state = (value, name) => {
@@ -183,3 +160,22 @@ export const router = (routes, onRoute) => {
 
   return container;
 };
+
+export const test = (name, fn, cb) => {
+  const errs = []
+  console.log("=== RUN", name)
+  const start = performance.now()
+  let end = start;
+  try {
+    fn(msg => {throw new Error(msg)})
+  } catch (err) {
+    errs.push(err)
+  } finally {
+    end = performance.now()
+  }
+  const status = errs.length === 0 ? "PASS" : "FAIL"
+  const time = (end-start).toFixed(2)
+  console.log(`--- ${status} (${time}s)`)
+  errs.forEach(err => console.log(err))
+  if (cb) cb([name, errs, time])
+}
