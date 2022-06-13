@@ -161,21 +161,56 @@ export const router = (routes, onRoute) => {
   return container;
 };
 
-export const test = (name, fn, cb) => {
-  const errs = []
-  console.log("=== RUN", name)
-  const start = performance.now()
-  let end = start;
-  try {
-    fn(msg => {throw new Error(msg)})
-  } catch (err) {
-    errs.push(err)
-  } finally {
-    end = performance.now()
+export const test = group => {
+  const tests = []
+
+  const test = (name, func) => {
+    tests.push({name, func})
   }
-  const status = errs.length === 0 ? "PASS" : "FAIL"
-  const time = (end-start).toFixed(2)
-  console.log(`--- ${status} (${time}s)`)
-  errs.forEach(err => console.log(err))
-  if (cb) cb([name, errs, time])
+
+  const log = ({ group, results, time }) => {
+    console.log("=== RUN", group, "tests")
+    let pass = true
+
+    for (const { name, error, time } of results) {
+      console.log("   === RUN", name)
+
+      const status = error === null ? "PASS" : "FAIL"
+      console.log(`   --- ${status} (${time}s)`)
+
+      if (error !== null) {
+        pass = false
+        console.log(error)
+      }
+    }
+
+    const status = pass ? "PASS" : "FAIL"
+    console.log(`--- ${status} (${time}s)`)
+  }
+
+  const play = quiet => {
+    const totalStart = performance.now()
+    const results = []
+    for (const {name, func} of tests) {
+      const start = performance.now()
+      let error = null
+      try {
+        func(msg => { throw new Error(msg) })
+      } catch (e) {
+        error = e
+      }
+      const time = ((performance.now() - start)/1000).toFixed(2)
+      results.push({ name, error, time })
+    }
+    const totalTime = ((performance.now() - totalStart)/1000).toFixed(2)
+    const resp =  { group, results, time: totalTime }
+
+    if (!quiet) {
+      log(resp)
+    }
+
+    return resp
+  }
+
+  return [test, play]
 }
