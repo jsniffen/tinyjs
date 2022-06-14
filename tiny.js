@@ -1,68 +1,148 @@
+// Find an HTMLElement by id and append another
+// HTMLElement to it.
+//
+// Args:
+//  id: A string used to identify the element to append to.
+//  component: A function that returns an HTMLElement.
+//
+// Throws:
+//  If no element is found with the provided id
+//  an Error is thrown.
 export const mount = (id, component) => {
   const container = document.getElementById(id)
   if (container) container.append(component())
+  else throw new Error(`element with id: ${id} not found`)
 }
 
+// Create an HTMLElement with attributes and children.
+//
+// Args:
+//  type: A string to identify the type of HTML to create.
+//  attributes: An object containing properties
+//    or attributes to apply to the element.
+//  children: One or more HTMLElements to append
+//    to the created one.
+//
+// Returns:
+//  The created HTMLElement.
 export const element = (type, attributes, ...children) => {
-  const element = document.createElement(type);
+  const element = document.createElement(type)
 
   for (const key in attributes) {
-    const value = attributes[key];
+    const value = attributes[key]
     if (key in element) {
-      element[key] = value;
+      element[key] = value
     } else {
-      element.setAttribute(key, value);
+      element.setAttribute(key, value)
     }
   }
   
   for (const child of children) {
-    element.append(child);
+    element.append(child)
   }
 
-  return element;
-};
+  return element
+}
 
+// Create a value that can be subscribed to when
+// it changes.
+//
+// Args:
+//  value: The initial value of the state.
+//  name: An optional name for the state, used for
+//    debugging only.
+//
+// Returns:
+//  A list of two functions: [setState, onState]
+//
+//  example:
+//    const [onCount, setCount] = state(0) 
+//
+//    const div = element("div")
+//
+//    onCount(count => {
+//      div.textContent = count
+//    }, div)
+//
+//  setState is a function that can be called
+//  to modify the state and broadcast the
+//  changes to all subscribers.
+//
+//  setState can be called with a function or a value.
+//
+//  If it is called with a function, the function
+//  will be provided the current value of the state.
+//  example:
+//    setState(count => count+1)
+//
+//  If it is called with a value, the state will be set
+//  to the provided value.
+//  example:
+//    setState(2)
+//
+//  onState is a function that can be called to 
+//  subscribe to any state changes. onState is called
+//  by passing in a callback function that will run
+//  anytime the state is updated.
+//
+//  example:
+//    onState(state => console.log(state))
+//
+//  Sometimes, it's important that the subscription is scoped
+//  to the lifetime of an HTMLElement. In that case, you can
+//  optionally provide an HTMLElement as a 2nd argument. If the
+//  HTMLElement disconnects from the dom, the subscription
+//  is cancelled.
+//
+//  example: 
+//    const div = element("div")
+//    onState(state => {
+//      div.textContent = state
+//    }, div)
+//
+//  If no HTMLElement is provided, the subscription will last
+//  forever.
 export const state = (value, name) => {
-  const elementListeners = new Map();
-  const staticListeners = [];
+  const elementListeners = new Map()
+  const staticListeners = []
 
   const clearElementListeners = () => {
     elementListeners.forEach((func, element) => {
       if (element.isConnected) {
-        element.wasOnDom = true;
+        element.wasOnDom = true
       }
 
       if (!element.isConnected && element.wasOnDom) {
-        elementListeners.delete(element);
+        elementListeners.delete(element)
       }
-    });
+    })
   }
 
-  const onState = (func, element, mode) => {
-    clearElementListeners();
+  const onState = (func, element, defer) => {
+    clearElementListeners()
 
-    if (mode === "GET") {
-      return value;
+    if (func === null) {
+      return value
     }
 
     if (element) {
-      elementListeners.set(element, func);
+      elementListeners.set(element, func)
     } else {
-      staticListeners.push(func);
+      staticListeners.push(func)
     }
 
-    if (mode === "DEFER") {
-      return;
+    if (defer) {
+      return
     }
 
-    func(value);
+    func(value)
   }
 
   const setState = func => {
-    clearElementListeners();
+    clearElementListeners()
 
     if (typeof func === "function") {
-      value = func(value);
+      value = func(value)
     } else {
       value = func
     }
@@ -71,16 +151,37 @@ export const state = (value, name) => {
     staticListeners.forEach(func => func(value))
   }
 
-  return [onState, setState];
+  return [onState, setState]
 }
 
+// Subscribe to multiple states at once.
+//
+// Args:
+//  func: A callback function to run when any
+//    of the states change.
+//  onStates: One or more states to subscribe to.
+//  element: An HTMLElement to scope the subscriptions to.
+//    When the element disconnects from the dom, all
+//    subscriptions will be cancelled. Otherwise, they are
+//    permanent.
+//
+//  Example:
+//    const [onCount, setCount] = state(0)
+//    const [onLoading, setLoading] = state(false)
+//
+//    const div = element("div")
+//
+//    subscribe((count, loading) => {
+//      div.textContent = count
+//      div.hidden = !loading
+//    }, [onCount, onLoading], div)
 export const subscribe = (func, onStates, element) => {
   for (const onState of onStates) {
     onState(_ => {
-      func(...onStates.map(onState => onState(null, null, "GET")));
-    }, element, "DEFER");
+      func(...onStates.map(onState => onState(null)));
+    }, element, true);
   }
-  func(...onStates.map(onState => onState(null, null, "GET")));
+  func(...onStates.map(onState => onState(null)));
 };
 
 export const route = () => {
@@ -161,56 +262,16 @@ export const router = (routes, onRoute) => {
   return container;
 };
 
-export const test = group => {
-  const tests = []
-
-  const test = (name, func) => {
-    tests.push({name, func})
+export const test = (name, func) => {
+  const start = performance.now()
+  let error = null
+  try {
+    func(msg => { throw new Error(msg) })
+  } catch (e) {
+    error = e
   }
-
-  const log = ({ group, results, time }) => {
-    console.log("=== RUN", group, "tests")
-    let pass = true
-
-    for (const { name, error, time } of results) {
-      console.log("   === RUN", name)
-
-      const status = error === null ? "PASS" : "FAIL"
-      console.log(`   --- ${status} (${time}s)`)
-
-      if (error !== null) {
-        pass = false
-        console.log(error)
-      }
-    }
-
-    const status = pass ? "PASS" : "FAIL"
-    console.log(`--- ${status} (${time}s)`)
-  }
-
-  const play = quiet => {
-    const totalStart = performance.now()
-    const results = []
-    for (const {name, func} of tests) {
-      const start = performance.now()
-      let error = null
-      try {
-        func(msg => { throw new Error(msg) })
-      } catch (e) {
-        error = e
-      }
-      const time = ((performance.now() - start)/1000).toFixed(2)
-      results.push({ name, error, time })
-    }
-    const totalTime = ((performance.now() - totalStart)/1000).toFixed(2)
-    const resp =  { group, results, time: totalTime }
-
-    if (!quiet) {
-      log(resp)
-    }
-
-    return resp
-  }
-
-  return [test, play]
+  const time = ((performance.now() - start)/1000).toFixed(2)
+  const status = error === null ? "✓" : "✗"
+  console.log(`${status} ${name} (${time}s)`)
+  if (error) console.log(error)
 }
