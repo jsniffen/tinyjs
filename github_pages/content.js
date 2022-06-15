@@ -1,4 +1,4 @@
-import { element, mount, state, route, router } from "./tiny.js"
+import { element, mount, state, route, router } from "./../tiny.js"
 
 export const sections = [
   {

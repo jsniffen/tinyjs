@@ -1,4 +1,4 @@
-import { mount, element, route, router, state, subscribe } from "./tiny.js"
+import { mount, element, route, router, state, subscribe } from "./../tiny.js"
 import { sections } from "./content.js"
 
 const [onActiveSection, setActiveSection] = state(0)
