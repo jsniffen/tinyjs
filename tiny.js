@@ -62,7 +62,7 @@ export const element = (type, attributes, ...children) => {
 //
 //    onCount(count => {
 //      div.textContent = count
-//    }, div)
+//    })
 //
 //  setState is a function that can be called
 //  to modify the state and broadcast the
@@ -87,68 +87,26 @@ export const element = (type, attributes, ...children) => {
 //
 //  example:
 //    onState(state => console.log(state))
-//
-//  Sometimes, it's important that the subscription is scoped
-//  to the lifetime of an HTMLElement. In that case, you can
-//  optionally provide an HTMLElement as a 2nd argument. If the
-//  HTMLElement disconnects from the dom, the subscription
-//  is cancelled.
-//
-//  example: 
-//    const div = element("div")
-//    onState(state => {
-//      div.textContent = state
-//    }, div)
-//
-//  If no HTMLElement is provided, the subscription will last
-//  forever.
 export const state = (value, name) => {
-  const elementListeners = new Map()
-  const staticListeners = []
+  const listeners = []
 
-  const clearElementListeners = () => {
-    elementListeners.forEach((func, element) => {
-      if (element.isConnected) {
-        element.wasOnDom = true
-      }
-
-      if (!element.isConnected && element.wasOnDom) {
-        elementListeners.delete(element)
-      }
-    })
-  }
-
-  const onState = (func, element, defer) => {
-    clearElementListeners()
-
+  const onState = (func, defer) => {
     if (func === null) {
       return value
     }
-
-    if (element) {
-      elementListeners.set(element, func)
-    } else {
-      staticListeners.push(func)
+    listeners.push(func)
+    if (!defer) {
+      func(value)
     }
-
-    if (defer) {
-      return
-    }
-
-    func(value)
   }
 
   const setState = func => {
-    clearElementListeners()
-
     if (typeof func === "function") {
       value = func(value)
     } else {
       value = func
     }
-
-    elementListeners.forEach(func => func(value))
-    staticListeners.forEach(func => func(value))
+    listeners.forEach(func => func(value))
   }
 
   return [onState, setState]
@@ -175,11 +133,11 @@ export const state = (value, name) => {
 //      div.textContent = count
 //      div.hidden = !loading
 //    }, [onCount, onLoading], div)
-export const subscribe = (func, onStates, element) => {
+export const subscribe = (func, ...onStates) => {
   for (const onState of onStates) {
     onState(_ => {
       func(...onStates.map(onState => onState(null)));
-    }, element, true);
+    }, true);
   }
   func(...onStates.map(onState => onState(null)));
 };

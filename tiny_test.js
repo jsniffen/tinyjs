@@ -1,5 +1,4 @@
 import { mount, element, state, subscribe, test } from "./tiny.js"
-
 test("element should return HTMLElement", fail => {
   if (!(element("div") instanceof HTMLElement)) {
     fail("return type is not an instance of HTMLElement")
@@ -73,39 +72,18 @@ test("state should watch changes", fail => {
   }
 })
 
-test("state should remove subscriptions", fail => {
-  const [onCount, setCount] = state(0)
-
-  const div = element("div")
-  onCount(count => div.textContent = count, div)
-
-  document.body.append(div)
-
-  setCount(1)
-  if (div.textContent != 1) {
-    fail(`div.textContent = ${div.textContent}; want ${1}`)
-  }
-
-  document.body.removeChild(div)
-  setCount(count => 2)
-
-  if (div.textContent != 1) {
-    fail(`div.textContent = ${div.textContent}; want ${1}`)
-  }
-})
-
 test("state should defer", fail => {
   const [onCount, setCount] = state(0)
   const div = element("div")
   onCount(count => {
     fail("this callback should not run")
-  }, null, "DEFER")
+  }, true)
 })
 
 test("state should get", fail => {
   const want = 10
   const [onCount, setCount] = state(want)
-  const got = onCount(null, null, "GET")
+  const got = onCount(null)
   if (want !== got) {
     fail(`want: ${want}; got: ${got}`)
   }
@@ -122,7 +100,7 @@ test("subscribe should only initialize once", fail => {
     if (ran > 1) {
       fail("subscribe initialized more than once")
     }
-  }, [onCount, onLoading])
+  }, onCount, onLoading)
 })
 
 test("subscribe should watch changes", fail => {
@@ -134,7 +112,7 @@ test("subscribe should watch changes", fail => {
   subscribe((count, loading) => {
     div.textContent = count
     div.hidden = loading
-  }, [onCount, onLoading])
+  }, onCount, onLoading)
 
   if (div.hidden) {
     fail("div should not hidden")
@@ -151,38 +129,6 @@ test("subscribe should watch changes", fail => {
     fail(`div.textContent = ${div.textContent}; want 1`)
   }
   setLoading(true)
-  if (!div.hidden) {
-    fail("div should be hidden")
-  }
-  if (div.textContent != 1) {
-    fail(`div.textContent = ${div.textContent}; want 1`)
-  }
-})
-
-test("subscribe should remove subscriptions", fail => {
-  const [onCount, setCount] = state(0)
-  const [onLoading, setLoading] = state(false)
-
-  const div = element("div")
-  document.body.append(div)
-
-  subscribe((count, loading) => {
-    div.textContent = count
-    div.hidden = loading
-  }, [onCount, onLoading], div)
-
-  setCount(1)
-  setLoading(true)
-  if (!div.hidden) {
-    fail("div should be hidden")
-  }
-  if (div.textContent != 1) {
-    fail(`div.textContent = ${div.textContent}; want 1`)
-  }
-  document.body.removeChild(div)
-
-  setCount(2)
-  setLoading(false)
   if (!div.hidden) {
     fail("div should be hidden")
   }
