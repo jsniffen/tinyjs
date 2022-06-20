@@ -137,18 +137,15 @@ const footer = (onItems, setItems, onRoute) => {
   })
 
   onRoute(route => {
+    active.classList.remove("selected")
+    all.classList.remove("selected")
+    completed.classList.remove("selected")
     if (route === "#/active")  {
       active.classList.add("selected")
-      all.classList.remove("selected")
-      completed.classList.remove("selected")
     } else if (route === "#/completed") {
       completed.classList.add("selected")
-      all.classList.remove("selected")
-      active.classList.remove("selected")
     } else {
       all.classList.add("selected")
-      completed.classList.remove("selected")
-      active.classList.remove("selected")
     }
   })
 
