@@ -1,4 +1,4 @@
-import { element, mount, state } from "./../../tiny.js"
+import { element, mount, route, subscribe, state } from "./../../tiny.js"
 
 const header = setItems => {
   return element("header", { className: "header" },
@@ -22,48 +22,77 @@ const header = setItems => {
 }
 
 const item = (setItems, item) => {
-  return element("li", {
-      className: item.completed ? "completed" : "",
-    },
-    element("div", { className: "view" },
-      element("input", {
-        className: "toggle",
-        type: "checkbox",
-        checked: item.completed,
-        onclick: e => {
-          setItems(items => {
-            for (let i = 0; i < items.length; i++) {
-              if (items[i].text === item.text) {
-                items[i].completed = !items[i].completed
+  const li = element("li", { className: item.completed ? "completed" : "", })
+
+  const input = element("input", {
+    className: "edit", value: item.text,
+    onkeydown: e => {
+      if (e.code === "Enter") {
+        setItems(items => {
+          if (e.target.value != "") {
+            items.forEach(i => {
+              if (i === item) {
+                item.text = e.target.value
                 return items
               }
-            }
-          })
-        }
-      }),
-      element("label", { textContent: item.text }),
-      element("button", {
-        className: "destroy",
-        onclick: () => setItems(items => items.filter(i => i.text !== item.text)),
-      }),
-    )
-  )
-}
-
-const main = (onItems, setItems) => {
-  const ul = element("ul", { className: "todo-list" })
-
-  onItems(items => {
-    console.log(items)
-    const lis = items.map(i => item(setItems, i))
-    ul.replaceChildren(...lis)
+            })
+          } else {
+            items.filter(i => item !== i)
+          }
+          return items
+        })
+        li.classList.toggle("editing")
+      }
+    },
   })
 
-  return element("section", { className: "main" },
+  const view = element("div", { className: "view" },
+    element("input", {
+      className: "toggle",
+      type: "checkbox",
+      checked: item.completed,
+      onclick: e => {
+        setItems(items => {
+          for (let i = 0; i < items.length; i++) {
+            if (items[i] === item) {
+              items[i].completed = !items[i].completed
+              return items
+            }
+          }
+        })
+      }
+    }),
+    element("label", {
+      textContent: item.text,
+      ondblclick: () => {
+        li.classList.toggle("editing")
+        input.focus()
+      }
+    }),
+    element("button", {
+      className: "destroy",
+      onclick: () => setItems(items => items.filter(i => i !== item)),
+    }),
+  )
+
+  li.append(view, input)
+  return li
+}
+
+const main = (onItems, setItems, onRoute) => {
+  const ul = element("ul", { className: "todo-list" })
+
+  const section = element("section", { className: "main" },
     element("input", {
       className: "toggle-all",
       id: "toggle-all",
       type: "checkbox",
+      onclick: e => {
+        setItems(items => {
+          items.forEach(item => item.completed= e.target.checked)
+          return items
+        })
+      }
     }),
     element("label", {
       for: "toggle-all",
@@ -71,11 +100,74 @@ const main = (onItems, setItems) => {
     }),
     ul,
   )
+
+  subscribe((items, route) => {
+    section.hidden = items.length === 0
+
+    if (route === "#/active") {
+      items = items.filter(item => !item.completed)
+    } else if (route === "#/completed") {
+      items = items.filter(item => item.completed)
+    }
+
+    let lis = items.map(i => item(setItems, i))
+
+    ul.replaceChildren(...lis)
+  }, onItems, onRoute)
+
+  return section
 }
 
-const footer = (onItems) => {
+const footer = (onItems, setItems, onRoute) => {
   const span = element("span", { className: "todo-count" })
+
+  const all = element("a", {
+    href: "#/",
+    textContent: "All",
+  })
+
+  const active = element("a", {
+    href: "#/active",
+    textContent: "Active",
+  })
+
+  const completed = element("a", {
+    href: "#/completed",
+    textContent: "Completed",
+  })
+
+  onRoute(route => {
+    if (route === "#/active")  {
+      active.classList.add("selected")
+      all.classList.remove("selected")
+      completed.classList.remove("selected")
+    } else if (route === "#/completed") {
+      completed.classList.add("selected")
+      all.classList.remove("selected")
+      active.classList.remove("selected")
+    } else {
+      all.classList.add("selected")
+      completed.classList.remove("selected")
+      active.classList.remove("selected")
+    }
+  })
+
+  const footer = element("footer", { className: "footer" },
+    span,
+    element("ul", { className: "filters" },
+      element("li", {}, all),
+      element("li", {}, active),
+      element("li", {}, completed),
+    ),
+    element("button", {
+      className: "clear-completed",
+      textContent: "Clear completed",
+      onclick: () => setItems(items => items.filter(item => !item.completed)),
+    }),
+  )
+
   onItems(items => {
+    footer.hidden = items.length === 0
     const count = items.filter(item => !item.completed).length
     if (count > 0 && count < 10 ) {
       span.innerHTML = `<strong>${count}</strong> item left`
@@ -84,42 +176,17 @@ const footer = (onItems) => {
     }
   })
 
-  return element("footer", { className: "footer" },
-    span,
-    element("ul", { className: "filters" },
-      element("li", {},
-        element("a", {
-          className: "selected",
-          href: "#/",
-          textContent: "All",
-        }),
-      ),
-      element("li", {},
-        element("a", {
-          href: "#/active",
-          textContent: "Active",
-        }),
-      ),
-      element("li", {},
-        element("a", {
-          href: "#/completed",
-          textContent: "Completed",
-        }),
-      ),
-    ),
-    element("button", {
-      className: "clear-completed",
-      textContent: "Clear completed",
-    }),
-  )
+  return footer
 }
 
 mount("tiny-todomvc", () => {
   const [onItems, setItems] = state([])
 
+  const { onRoute } = route()
+
   return [
     header(setItems),
-    main(onItems, setItems),
-    footer(onItems),
+    main(onItems, setItems, onRoute),
+    footer(onItems, setItems, onRoute),
   ]
 })
