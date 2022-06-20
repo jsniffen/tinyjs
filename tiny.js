@@ -10,7 +10,11 @@
 //  an Error is thrown.
 export const mount = (id, component) => {
   const container = document.getElementById(id)
-  if (container) container.append(component())
+  if (container) {
+    const elements = component()
+    if (Array.isArray(elements)) container.append(...elements)
+    else container.append(elements)
+  }
   else throw new Error(`element with id: ${id} not found`)
 }
 
