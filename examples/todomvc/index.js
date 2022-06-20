@@ -180,7 +180,12 @@ const footer = (onItems, setItems, onRoute) => {
 }
 
 mount("tiny-todomvc", () => {
-  const [onItems, setItems] = state([])
+  const items = "tiny-todomvc" in localStorage ? JSON.parse(localStorage["tiny-todomvc"]) : []
+  const [onItems, setItems] = state(items)
+
+  onItems(items => {
+    localStorage["tiny-todomvc"] = JSON.stringify(items)
+  })
 
   const { onRoute } = route()
 
