@@ -29,20 +29,40 @@ export const mount = (id, component) => {
 //
 // Returns:
 //  The created HTMLElement.
-export const element = (type, attributes, ...children) => {
-  const element = document.createElement(type)
+export const element = (type, ...args) => {
+  var tokens = type.split(/(?=\.)|(?=#)|(?=\[)/)
+  const element = document.createElement(tokens[0])
 
-  for (const key in attributes) {
-    const value = attributes[key]
-    if (key in element) {
-      element[key] = value
-    } else {
-      element.setAttribute(key, value)
+  for (const token of tokens.slice(1)) {
+    switch (token[0]) {
+      case "#":
+        element.id = token.slice(1)
+        break
+      case ".":
+        element.classList.add(token.slice(1))
+        break
+      case "[":
+        let [k, v] = token.replace(/(])|(\[)|(\s)/g, "").split("=")
+        element.setAttribute(k, v ?? true)
     }
   }
-  
-  for (const child of children) {
-    element.append(child)
+
+  if (args && args.length > 0) {
+    let idx = 0
+    if (!(args[idx] instanceof HTMLElement) && (args[idx] instanceof Object)) {
+      const attributes = args[idx]
+        for (const key in attributes) {
+          const value = attributes[key]
+          if (key in element) {
+            element[key] = value
+          } else {
+            element.setAttribute(key, value)
+          }
+        }
+      idx++
+    }
+
+    element.append(...args.slice(idx))
   }
 
   return element

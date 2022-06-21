@@ -1,78 +1,102 @@
 import { element, mount, route, subscribe, state } from "./../../tiny.js"
 
+const e = element
+
 const header = setItems => {
-  return element("header", { className: "header" },
-    element("h1", { textContent: "todos" }),
-    element("input", {
-      className: "new-todo",
-      placeholder: "What needs to be done?",
-      autofocus: true,
-      onkeydown: e => {
-        if (e.code === "Enter") {
-          const item = {
-            text: e.target.value,
-            completed: false,
-          }
-          setItems(items => items.concat([item]))
-          e.target.value = ""
-        }
+  const onkeydown = e => {
+    if (e.code === "Enter") {
+      const item = {
+        text: e.target.value,
+        completed: false,
       }
-    }),
+      setItems(items => items.concat([item]))
+      e.target.value = ""
+    }
+  }
+
+  return e("header.header",
+    e("h1", "todos"),
+    e("input.new-todo[autofocus]", {
+      placeholder: "What needs to be done?",
+      onkeydown: onkeydown,
+    })
   )
 }
 
 const item = (setItems, item) => {
-  const li = element("li", { className: item.completed ? "completed" : "", })
-
-  const input = element("input", {
-    className: "edit", value: item.text,
-    onkeydown: e => {
-      if (e.code === "Enter") {
-        setItems(items => {
-          if (e.target.value != "") {
-            items.forEach(i => {
-              if (i === item) {
-                item.text = e.target.value
-                return items
-              }
-            })
-          } else {
-            items.filter(i => item !== i)
-          }
-          return items
-        })
-        li.classList.toggle("editing")
-      }
-    },
-  })
-
-  const view = element("div", { className: "view" },
-    element("input", {
-      className: "toggle",
-      type: "checkbox",
-      checked: item.completed,
-      onclick: e => {
-        setItems(items => {
-          for (let i = 0; i < items.length; i++) {
-            if (items[i] === item) {
-              items[i].completed = !items[i].completed
+  const onkeydown =  e => {
+    if (e.code === "Enter") {
+      setItems(items => {
+        if (e.target.value != "") {
+          items.forEach(i => {
+            if (i === item) {
+              item.text = e.target.value
               return items
             }
-          }
-        })
-      }
-    }),
-    element("label", {
-      textContent: item.text,
-      ondblclick: () => {
-        li.classList.toggle("editing")
-        input.focus()
-      }
-    }),
-    element("button", {
-      className: "destroy",
-      onclick: () => setItems(items => items.filter(i => i !== item)),
-    }),
+          })
+        } else {
+          items.filter(i => item !== i)
+        }
+        return items
+      })
+      li.classList.toggle("editing")
+    }
+  }
+
+  const li = e("li", {
+    className: item.completed ? "completed" : "",
+  })
+
+  const input = (
+    e("input.edit", {
+      value: item.text,
+      onkeydown: e => {
+        if (e.code === "Enter") {
+          setItems(items => {
+            if (e.target.value != "") {
+              items.forEach(i => {
+                if (i === item) {
+                  item.text = e.target.value
+                  return items
+                }
+              })
+            } else {
+              items.filter(i => item !== i)
+            }
+            return items
+          })
+          li.classList.toggle("editing")
+        }
+      },
+    })
+  )
+
+  const view = (
+    e("div.view",
+      e("input.toggle[type=checkbox]", {
+        checked: item.completed,
+        onclick: e => {
+          setItems(items => {
+            for (let i = 0; i < items.length; i++) {
+              if (items[i] === item) {
+                items[i].completed = !items[i].completed
+                return items
+              }
+            }
+          })
+        }
+      }),
+      e("label", {
+        textContent: item.text,
+        ondblclick: () => {
+          li.classList.toggle("editing")
+          input.focus()
+        }
+      }),
+      e("button.destroy", {
+        onclick: () => setItems(items => items.filter(i => i !== item)),
+      }),
+    )
   )
 
   li.append(view, input)
@@ -80,25 +104,19 @@ const item = (setItems, item) => {
 }
 
 const main = (onItems, setItems, onRoute) => {
-  const ul = element("ul", { className: "todo-list" })
+  const ul = e("ul.todo-list")
 
-  const section = element("section", { className: "main" },
-    element("input", {
-      className: "toggle-all",
-      id: "toggle-all",
-      type: "checkbox",
+  const section = e("section.main",
+    e("input#toggle-all.toggle-all[type=checkbox]", {
       onclick: e => {
         setItems(items => {
-          items.forEach(item => item.completed= e.target.checked)
+          items.forEach(item => item.completed = e.target.checked)
           return items
         })
       }
     }),
-    element("label", {
-      for: "toggle-all",
-      textContent: "Mark all as complete",
-    }),
-    ul,
+    e("label[for=toggle-all]", "Mark all as complete"),
+    ul
   )
 
   subscribe((items, route) => {
@@ -119,19 +137,18 @@ const main = (onItems, setItems, onRoute) => {
 }
 
 const footer = (onItems, setItems, onRoute) => {
-  const span = element("span", { className: "todo-count" })
+  const span = e("span.todo-count")
 
-  const all = element("a", {
-    href: "#/",
-    textContent: "All",
-  })
+  const all = e("a", { href: "#/" },
+    "All"
+  )
 
-  const active = element("a", {
+  const active = e("a", {
     href: "#/active",
     textContent: "Active",
   })
 
-  const completed = element("a", {
+  const completed = e("a", {
     href: "#/completed",
     textContent: "Completed",
   })
@@ -149,18 +166,20 @@ const footer = (onItems, setItems, onRoute) => {
     }
   })
 
-  const footer = element("footer", { className: "footer" },
-    span,
-    element("ul", { className: "filters" },
-      element("li", {}, all),
-      element("li", {}, active),
-      element("li", {}, completed),
-    ),
-    element("button", {
-      className: "clear-completed",
-      textContent: "Clear completed",
-      onclick: () => setItems(items => items.filter(item => !item.completed)),
-    }),
+  const footer = (
+    e("footer.footer",
+      span,
+      e("ul.filters",
+        e("li", all),
+        e("li", active),
+        e("li", completed),
+      ),
+      e("button.clear-completed", {
+        onclick: () => setItems(items => items.filter(item => !item.completed)),
+      },
+        "Clear completed"
+      ),
+    )
   )
 
   onItems(items => {

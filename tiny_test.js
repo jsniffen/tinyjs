@@ -1,7 +1,32 @@
 import { mount, element, state, subscribe, test } from "./tiny.js"
+
 test("element should return HTMLElement", fail => {
   if (!(element("div") instanceof HTMLElement)) {
     fail("return type is not an instance of HTMLElement")
+  }
+})
+
+test("element should parse css selector", fail => {
+  const div = element("div#id.class1.class2[foo=bar][bazz=buzz]")
+  if (div.id !== "id") {
+    fail(`id is ${div.id}; want "id"`)
+  }
+
+  for (const className of ["class1", "class2"]) {
+    if (!div.classList.contains(className)) {
+      fail(`div does not contain className: ${className}`)
+    }
+  }
+
+  const attrs = {
+    "foo": "bar",
+    "bazz": "buzz" 
+  }
+  for (const key in attrs) {
+    const value = attrs[key]
+    if (div.getAttribute(key) !== value) {
+      fail(`div[${key}] is ${div.getAttribute(key)}; want ${value}`)
+    }
   }
 })
 
