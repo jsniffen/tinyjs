@@ -139,9 +139,7 @@ const main = (onItems, setItems, onRoute) => {
 const footer = (onItems, setItems, onRoute) => {
   const span = e("span.todo-count")
 
-  const all = e("a", { href: "#/" },
-    "All"
-  )
+  const all = e("a", { href: "#/" }, "All")
 
   const active = e("a", {
     href: "#/active",
