@@ -18,10 +18,7 @@ test("element should parse css selector", fail => {
     }
   }
 
-  const attrs = {
-    "foo": "bar",
-    "bazz": "buzz" 
-  }
+  const attrs = {"foo": "bar", "bazz": "buzz"}
   for (const key in attrs) {
     const value = attrs[key]
     if (div.getAttribute(key) !== value) {
