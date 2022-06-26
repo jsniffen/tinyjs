@@ -1,13 +1,88 @@
-// Find an HTMLElement by id and append another
-// HTMLElement to it.
-//
-// Args:
-//  id: A string used to identify the element to append to.
-//  component: A function that returns an HTMLElement.
-//
-// Throws:
-//  If no element is found with the provided id
-//  an Error is thrown.
+class $ {
+  constructor(func, on) {
+    this.func = func
+    this.on = on
+  }
+}
+
+const watch = (element, on, func) => {
+  let created = []
+  on(s => {
+    let nodes = func(s)
+
+    nodes = Array.isArray(nodes) ? nodes : [nodes]
+    nodes = nodes.map(node => node instanceof HTMLElement
+      ? node
+      : document.createTextNode(node))
+
+    if (nodes.length === 0) {
+      nodes = [document.createElement("div")]
+    }
+
+    if (created.length === 0) {
+      created = created.concat(nodes)
+      console.log(created)
+      element.append(...nodes)
+    } else {
+      const newNodes = nodes.slice(created.length)
+      let lastCreated = created[created.length-1]
+      console.log(lastCreated.parentNode)
+      for (let i = 0; i < newNodes.length; i++) {
+        lastCreated.parentNode.insertBefore(newNodes[i], lastCreated.nextSibling)
+        created.push(newNodes[i])
+        lastCreated = newNodes[i]
+      }
+
+      for (let i = 0; i < created.length; i++) {
+        created[i].replaceWith(nodes[i])
+      }
+    }
+  })
+}
+
+const setAttribute = (element, key, value) => {
+  if (key in element) {
+    element[key] = value
+  } else {
+    element.setAttribute(key, value)
+  }
+}
+
+export const parseCSSSelector = str => {
+  let [id, classes, attrs] = ["", [], {}]
+  while (true) {
+    let start = str.lastIndexOf("[")
+    let end = str.lastIndexOf("]")
+    if (start !== -1 && end !== -1) {
+      const selector = str.slice(start+1, end)
+      let [key, value] = selector.split("=")
+      value = value ?? true
+      if (value[0] === "'" || value[0] === "\"") {
+        value = value.slice(1, -1)
+      }
+      attrs[key] = value
+      str = str.slice(0, start)
+      continue
+    } 
+
+    start = str.lastIndexOf(".")
+    if (start != -1) {
+      classes.push(str.slice(start+1))
+      str = str.slice(0, start)
+      continue
+    }
+
+    start = str.lastIndexOf("#")
+    if (start != -1) {
+      id = str.slice(start+1)
+      str = str.slice(0, start)
+      continue
+    }
+
+    return [str, id, classes, attrs]
+  }
+}
+
 export const mount = (id, component) => {
   const container = document.getElementById(id)
   if (container) {
@@ -18,51 +93,34 @@ export const mount = (id, component) => {
   else throw new Error(`element with id: ${id} not found`)
 }
 
-// Create an HTMLElement with attributes and children.
-//
-// Args:
-//  type: A string to identify the type of HTML to create.
-//  attributes: An object containing properties
-//    or attributes to apply to the element.
-//  children: One or more HTMLElements to append
-//    to the created one.
-//
-// Returns:
-//  The created HTMLElement.
-export const element = (type, ...args) => {
-  var tokens = type.split(/(?=\.)|(?=#)|(?=\[)/)
-  const element = document.createElement(tokens[0])
-
-  for (const token of tokens.slice(1)) {
-    switch (token[0]) {
-      case "#":
-        element.id = token.slice(1)
-        break
-      case ".":
-        element.classList.add(token.slice(1))
-        break
-      case "[":
-        let [k, v] = token.replace(/(])|(\[)|(\s)/g, "").split("=")
-        element.setAttribute(k, v ?? true)
-    }
+export const element = (str, ...args) => {
+  const [type, id, classes, attrs] = parseCSSSelector(str)
+  const element = document.createElement(type)
+  if (id) element.id = id
+  element.classList.add(...classes)
+  for (const key in attrs) {
+    const value = attrs[key]
+    setAttribute(element, key, value)
   }
 
-  if (args && args.length > 0) {
-    let idx = 0
-    if (!(args[idx] instanceof HTMLElement) && (args[idx] instanceof Object)) {
-      const attributes = args[idx]
-        for (const key in attributes) {
-          const value = attributes[key]
-          if (key in element) {
-            element[key] = value
-          } else {
-            element.setAttribute(key, value)
-          }
+  for (const arg of args) {
+    if (arg instanceof $) {
+      watch(element, arg.on, arg.func)
+    } else if (arg instanceof HTMLElement ||
+               typeof(arg) === "string" ||
+               typeof(arg) === "number") {
+      element.append(arg)
+    } else {
+      Object.entries(arg).forEach(([key, value]) => {
+        if (value instanceof $) {
+          value.on(s => {
+            setAttribute(element, key, value.func(s))
+          })
+        } else {
+          setAttribute(element, key, value)
         }
-      idx++
+      })
     }
-
-    element.append(...args.slice(idx))
   }
 
   return element
@@ -133,7 +191,12 @@ export const state = (value, name) => {
     listeners.forEach(func => func(value))
   }
 
-  return [onState, setState]
+
+  const $_ = func => {
+    return new $(func, onState)
+  }
+
+  return [onState, setState, $_]
 }
 
 // Subscribe to multiple states at once.

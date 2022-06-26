@@ -1,5 +1,53 @@
-import { mount, element, state, subscribe, test } from "./tiny.js"
+import { mount, element, state, test, parseCSSSelector } from "./tiny.js"
 
+test("parseCSSSelector", fail => {
+  const passTests = {
+    "": ["", "", [], {}],
+    "div": ["div", "", [], {}],
+    "a": ["a", "", [], {}],
+    "div.foo": ["div", "", ["foo"], {}],
+    "div.foo.bar.baz": ["div", "", ["foo", "bar", "baz"], {}],
+    "div#id.foo": ["div", "id", ["foo"], {}],
+    "div#id.foo[bar='baz']": ["div", "id", ["foo"], {bar: "baz"}],
+    "div[bar='this is a test!']": ["div", "", [], {bar: "this is a test!"}],
+    "input[type=checkbox]": ["input", "", [], {type: "checkbox"}],
+    "div[href='/#/abc']": ["div", "", [], {href: "/#/abc"}],
+    "div[a='1'][b='2']": ["div", "", [], {a: "1", b: "2"}],
+  }
+  for (const str in passTests) {
+    const [wantType, wantID, wantClasses, wantAttrs] = passTests[str]
+    const [gotType, gotID, gotClasses, gotAttrs] = parseCSSSelector(str)
+    if (wantType !== gotType) {
+      fail(`error parsing ${str}; want type: ${wantType}, got: ${gotType}`)
+    }
+    if (wantID !== gotID) {
+      fail(`error parsing ${str}; want ID: ${wantID}, got: ${gotID}`)
+    }
+    for (const wantClass of wantClasses) {
+      if (!gotClasses.includes(wantClass)) {
+        fail(`error parsing ${str}; missing class: ${wantClass}`)
+      }
+    }
+    for (const wantKey in wantAttrs) {
+      const wantValue = wantAttrs[wantKey]
+      if (gotAttrs[wantKey] !== wantValue) {
+        fail(`error parsing ${str}; want selector: ${wantKey}=${wantValue}, got: ${wantKey}=${gotAttrs[wantKey]}`)
+      }
+    }
+  }
+})
+const e = element
+
+const [onCount, setCount, $count] = state(1)
+
+mount("tiny-test", () => {
+  return [
+    e("button", {onclick: () => setCount(c => c+1)}, "add"),
+    e("div", $count(c => [c, c+1])),
+  ]
+})
+
+/*
 test("element should return HTMLElement", fail => {
   if (!(element("div") instanceof HTMLElement)) {
     fail("return type is not an instance of HTMLElement")
@@ -158,3 +206,4 @@ test("subscribe should watch changes", fail => {
     fail(`div.textContent = ${div.textContent}; want 1`)
   }
 })
+*/
