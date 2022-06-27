@@ -13,13 +13,16 @@ mount("tiny-todomvc", () => {
     e("header.header",
       e("h1.todos"),
       e("input.new-todo[autofocus][placeholder='What needs to be done?']", {
-        onchange: e => setItems(items => items.concat([e.target.value]))
+        onchange: e => {
+          setItems(items => items.concat([e.target.value]))
+          e.target.value = ""
+        }
       }),
     ),
     e("section.main",
       e("input#toggle-all.toggle-all[type=checkbox]"),
       e("label[for='toggle-all']", "Mark all as complete"),
-      e("ul.todo-list", $items(items => items.map(item)), "END"), 
+      e("ul.todo-list", $items(items => items.map(item))), 
     ),
     e("footer.footer",
       e("span.todo-count", "asd"),

@@ -6,7 +6,7 @@ class $ {
 }
 
 const watch = (element, on, func) => {
-  let created = []
+  let container = document.createElement("div")
   on(s => {
     let nodes = func(s)
 
@@ -15,29 +15,9 @@ const watch = (element, on, func) => {
       ? node
       : document.createTextNode(node))
 
-    if (nodes.length === 0) {
-      nodes = [document.createElement("div")]
-    }
-
-    if (created.length === 0) {
-      created = created.concat(nodes)
-      console.log(created)
-      element.append(...nodes)
-    } else {
-      const newNodes = nodes.slice(created.length)
-      let lastCreated = created[created.length-1]
-      console.log(lastCreated.parentNode)
-      for (let i = 0; i < newNodes.length; i++) {
-        lastCreated.parentNode.insertBefore(newNodes[i], lastCreated.nextSibling)
-        created.push(newNodes[i])
-        lastCreated = newNodes[i]
-      }
-
-      for (let i = 0; i < created.length; i++) {
-        created[i].replaceWith(nodes[i])
-      }
-    }
+    container.replaceChildren(...nodes)
   })
+  element.append(container)
 }
 
 const setAttribute = (element, key, value) => {
@@ -192,11 +172,11 @@ export const state = (value, name) => {
   }
 
 
-  const $_ = func => {
+  const $state = func => {
     return new $(func, onState)
   }
 
-  return [onState, setState, $_]
+  return [onState, setState, $state]
 }
 
 // Subscribe to multiple states at once.

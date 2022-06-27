@@ -1,5 +1,6 @@
 import { mount, element, state, test, parseCSSSelector } from "./tiny.js"
 
+/*
 test("parseCSSSelector", fail => {
   const passTests = {
     "": ["", "", [], {}],
@@ -36,14 +37,22 @@ test("parseCSSSelector", fail => {
     }
   }
 })
+*/
+
 const e = element
 
 const [onCount, setCount, $count] = state(1)
 
+const number = n => {
+  return e("div", "Number: ", n)
+}
+
 mount("tiny-test", () => {
   return [
     e("button", {onclick: () => setCount(c => c+1)}, "add"),
-    e("div", $count(c => [c, c+1])),
+    e("div",
+      $count(c => Array.from(Array(c), (x,i) => i).map(number)),
+    ),
   ]
 })
 
