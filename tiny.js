@@ -6,18 +6,34 @@ class $ {
 }
 
 const watch = (element, on, func) => {
-  let container = document.createElement("div")
+  let created = [document.createTextNode("")]
+  element.append(created[0])
+
   on(s => {
     let nodes = func(s)
-
+    if (!nodes) nodes = ""
     nodes = Array.isArray(nodes) ? nodes : [nodes]
     nodes = nodes.map(node => node instanceof HTMLElement
       ? node
       : document.createTextNode(node))
 
-    container.replaceChildren(...nodes)
+    for (let i = 0; i < Math.min(nodes.length, created.length); i++) {
+      if (!created[i].isEqualNode(nodes[i])) {
+        console.log("replacing", i)
+        created[i].replaceWith(nodes[i])
+        created[i] = nodes[i]
+      }
+    }
+
+    if (nodes.length > created.length) {
+      const newNodes = nodes.slice(created.length)
+      created[created.length-1].after(...newNodes)
+      created = created.concat(newNodes)
+    } else {
+      created.slice(nodes.length).forEach(n => n.remove())
+      created = created.slice(0, nodes.length)
+    }
   })
-  element.append(container)
 }
 
 const setAttribute = (element, key, value) => {
