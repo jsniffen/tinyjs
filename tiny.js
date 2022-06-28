@@ -1,25 +1,41 @@
 class $ {
-  constructor(func, on) {
+  constructor(func, ...on) {
     this.func = func
     this.on = on
   }
+}
+
+class Reference {
+  constructor() {
+    this.element = null
+  }
+}
+
+export const $sub = (func, ...on) => {
+  return new $(func, ...on)
+}
+
+export const ref = () => {
+  return new Reference()
 }
 
 const watch = (element, on, func) => {
   let created = [document.createTextNode("")]
   element.append(created[0])
 
-  on(s => {
-    let nodes = func(s)
-    if (!nodes) nodes = ""
+  subscribe((...args) => {
+    let nodes = func(...args)
     nodes = Array.isArray(nodes) ? nodes : [nodes]
-    nodes = nodes.map(node => node instanceof HTMLElement
-      ? node
-      : document.createTextNode(node))
+    nodes = nodes
+      .map(node => node instanceof HTMLElement ? node : document.createTextNode(node))
+      .filter(node => node !== undefined && node !== null)
+
+    if (nodes.length === 0) {
+      nodes.push(document.createTextNode(""))
+    }
 
     for (let i = 0; i < Math.min(nodes.length, created.length); i++) {
       if (!created[i].isEqualNode(nodes[i])) {
-        console.log("replacing", i)
         created[i].replaceWith(nodes[i])
         created[i] = nodes[i]
       }
@@ -33,7 +49,8 @@ const watch = (element, on, func) => {
       created.slice(nodes.length).forEach(n => n.remove())
       created = created.slice(0, nodes.length)
     }
-  })
+    
+  }, ...on)
 }
 
 const setAttribute = (element, key, value) => {
@@ -109,10 +126,18 @@ export const element = (str, ...args) => {
     } else {
       Object.entries(arg).forEach(([key, value]) => {
         if (value instanceof $) {
-          value.on(s => {
-            setAttribute(element, key, value.func(s))
-          })
-        } else {
+          subscribe((...args) => {
+            setAttribute(element, key, value.func(...args))
+          }, ...value.on)
+          // value.on(s => {
+            // setAttribute(element, key, value.func(s))
+          // })
+        } else if (key === "ref") {
+          if (!(value instanceof Reference)) {
+            throw new Error("attribute ref requires a Reference instance")
+          }
+          value.element = element
+        } else{
           setAttribute(element, key, value)
         }
       })
@@ -122,49 +147,6 @@ export const element = (str, ...args) => {
   return element
 }
 
-// Create a value that can be subscribed to when
-// it changes.
-//
-// Args:
-//  value: The initial value of the state.
-//  name: An optional name for the state, used for
-//    debugging only.
-//
-// Returns:
-//  A list of two functions: [setState, onState]
-//
-//  example:
-//    const [onCount, setCount] = state(0) 
-//
-//    const div = element("div")
-//
-//    onCount(count => {
-//      div.textContent = count
-//    })
-//
-//  setState is a function that can be called
-//  to modify the state and broadcast the
-//  changes to all subscribers.
-//
-//  setState can be called with a function or a value.
-//
-//  If it is called with a function, the function
-//  will be provided the current value of the state.
-//  example:
-//    setState(count => count+1)
-//
-//  If it is called with a value, the state will be set
-//  to the provided value.
-//  example:
-//    setState(2)
-//
-//  onState is a function that can be called to 
-//  subscribe to any state changes. onState is called
-//  by passing in a callback function that will run
-//  anytime the state is updated.
-//
-//  example:
-//    onState(state => console.log(state))
 export const state = (value, name) => {
   const listeners = []
 
@@ -179,11 +161,8 @@ export const state = (value, name) => {
   }
 
   const setState = func => {
-    if (typeof func === "function") {
-      value = func(value)
-    } else {
-      value = func
-    }
+    const result = typeof func === "function" ? func(value) : func
+    if (result !== undefined) value = result
     listeners.forEach(func => func(value))
   }
 
@@ -195,27 +174,6 @@ export const state = (value, name) => {
   return [onState, setState, $state]
 }
 
-// Subscribe to multiple states at once.
-//
-// Args:
-//  func: A callback function to run when any
-//    of the states change.
-//  onStates: One or more states to subscribe to.
-//  element: An HTMLElement to scope the subscriptions to.
-//    When the element disconnects from the dom, all
-//    subscriptions will be cancelled. Otherwise, they are
-//    permanent.
-//
-//  Example:
-//    const [onCount, setCount] = state(0)
-//    const [onLoading, setLoading] = state(false)
-//
-//    const div = element("div")
-//
-//    subscribe((count, loading) => {
-//      div.textContent = count
-//      div.hidden = !loading
-//    }, [onCount, onLoading], div)
 export const subscribe = (func, ...onStates) => {
   for (const onState of onStates) {
     onState(_ => {
@@ -226,7 +184,7 @@ export const subscribe = (func, ...onStates) => {
 };
 
 export const route = () => {
-  const [onRoute, setRoute] = state(window.location.hash);
+  const [onRoute, setRoute, $route] = state(window.location.hash);
 
   window.addEventListener("popstate", () => {
     setRoute(window.location.hash);
@@ -250,7 +208,7 @@ export const route = () => {
   };
 
   return {
-    onRoute, setRoute, go, pushState, back, forward,
+    onRoute, setRoute, $route, go, pushState, back, forward,
   };
 };
 
