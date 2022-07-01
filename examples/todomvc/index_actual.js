@@ -1,4 +1,4 @@
-import {element as e, mount, ref, state, route, subscribe} from "./../../tiny.js"
+import {element as e, mount, ref, state, route, $sub} from "./../../tiny.js"
 
 const items = "tiny-todomvc" in localStorage ? JSON.parse(localStorage["tiny-todomvc"]) : []
 
@@ -78,10 +78,7 @@ const item = item => {
 }
 
 mount("tiny-todomvc", () => {
-  const [todoCount, todoList] = [ref(), ref()]
-  const [all, active, completed] = [ref(), ref(), ref()]
-
-  const html = [
+  return [
     e("header.header",
       e("h1.todos"),
       e("input.new-todo[autofocus][placeholder='What needs to be done?']", {
@@ -94,46 +91,28 @@ mount("tiny-todomvc", () => {
     e("section.main",
       e("input#toggle-all.toggle-all[type=checkbox]", {onclick: toggleAllDone}),
       e("label[for='toggle-all']", "Mark all as complete"),
-      e("ul.todo-list", {ref: todoList}),
+      e("ul.todo-list", $sub((items, route) => getItems(items, route).map(item), onItems, onRoute)),
     ),
     e("footer.footer",
-      e("span.todo-count", {ref: todoCount}),
+      e("span.todo-count", $items(items => {
+        const remaining = items.filter(i => !i.done).length
+        return [
+          e("strong", remaining),
+          ` item${remaining === 1 ? "" : "s"} left`
+        ]
+      })),
       e("ul.filters",
-        e("li", e("a[href='/examples/todomvc/#']", {ref: all}, "All")),
-        e("li", e("a[href='/examples/todomvc/#/active']", {ref: active}, "Active")),
-        e("li", e("a[href='/examples/todomvc/#/completed']", {ref: completed}, "Completed")),
+        e("li", e("a[href='/examples/todomvc/#']", {
+          className: $route(route => route === "" ? "selected" : "")
+        }, "All")),
+        e("li", e("a[href='/examples/todomvc/#/active']", {
+          className: $route(route => route === "#/active" ? "selected" : "")
+        }, "Active")),
+        e("li", e("a[href='/examples/todomvc/#/completed']", {
+          className: $route(route => route === "#/completed" ? "selected" : "")
+        }, "Completed")),
       ),
       e("button.clear-completed", {onclick: deleteDoneItems}, "Clear Completed"),
     )
   ]
-
-  onItems(items => {
-    const count = items.filter(item => !item.done).length
-    todoCount?.element?.replaceChildren(
-      e("strong", count),
-      ` ${count === 1 ? "item" : "items"} left`,
-    )
-  })
-  
-  onRoute(route => {
-    [all, active, completed].forEach(n => n?.element?.classList?.remove("selected"))
-    if (route === "#/active") {
-      active?.element?.classList.add("selected")
-    } else if (route === "#/completed") {
-      completed?.element?.classList.add("selected")
-    } else {
-      all?.element?.classList.add("selected")
-    }
-  })
-
-  subscribe((items, route) => {
-    if (route === "#/active") {
-      items = items.filter(item => !item.done)
-    } else if (route === "#/completed") {
-      items = items.filter(item => item.done)
-    }
-    todoList?.element?.replaceChildren(...items.map(item))
-  }, onItems, onRoute)
-
-  return html
 })

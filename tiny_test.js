@@ -1,109 +1,36 @@
-import { mount, element as e, ref, state, test, parseCSSSelector } from "./tiny.js"
+import {mount, element, ref, state, test, tests} from "./tiny.js"
 
-const [onCount, setCount, $count] = state(1)
+const [onTests] = tests
 
-const number = n => {
-  return e("div", "Number: ", n)
-}
-
-const button = ref()
 mount("tiny-test", () => {
-  return [
-    e("button", button, {onclick: () => setCount(c => c-1)}, "remove"),
-    e("button", {onclick: () => setCount(c => c+1)}, "add"),
-    e("div", $count(n => Array.from(Array(n), (x, i) => i+1).map(i => number(i)))),
-  ]
+  const container = element("div")
+
+  onTests(tests => {
+    const divs = []
+    for (const {error, status, name, time} of tests) {
+      divs.push(
+        element("div",
+          `${status} ${name} (${time}s)`,
+          element("br"),
+          `${error?.stack ?? ""}`
+        )
+      )
+    }
+    container.replaceChildren(...divs)
+  })
+
+  return container
 })
-console.log(button)
 
-
-/*
-test("parseCSSSelector", fail => {
-  const passTests = {
-    "": ["", "", [], {}],
-    "div": ["div", "", [], {}],
-    "a": ["a", "", [], {}],
-    "div.foo": ["div", "", ["foo"], {}],
-    "div.foo.bar.baz": ["div", "", ["foo", "bar", "baz"], {}],
-    "div#id.foo": ["div", "id", ["foo"], {}],
-    "div#id.foo[bar='baz']": ["div", "id", ["foo"], {bar: "baz"}],
-    "div[bar='this is a test!']": ["div", "", [], {bar: "this is a test!"}],
-    "input[type=checkbox]": ["input", "", [], {type: "checkbox"}],
-    "div[href='/#/abc']": ["div", "", [], {href: "/#/abc"}],
-    "div[a='1'][b='2']": ["div", "", [], {a: "1", b: "2"}],
-  }
-  for (const str in passTests) {
-    const [wantType, wantID, wantClasses, wantAttrs] = passTests[str]
-    const [gotType, gotID, gotClasses, gotAttrs] = parseCSSSelector(str)
-    if (wantType !== gotType) {
-      fail(`error parsing ${str}; want type: ${wantType}, got: ${gotType}`)
-    }
-    if (wantID !== gotID) {
-      fail(`error parsing ${str}; want ID: ${wantID}, got: ${gotID}`)
-    }
-    for (const wantClass of wantClasses) {
-      if (!gotClasses.includes(wantClass)) {
-        fail(`error parsing ${str}; missing class: ${wantClass}`)
-      }
-    }
-    for (const wantKey in wantAttrs) {
-      const wantValue = wantAttrs[wantKey]
-      if (gotAttrs[wantKey] !== wantValue) {
-        fail(`error parsing ${str}; want selector: ${wantKey}=${wantValue}, got: ${wantKey}=${gotAttrs[wantKey]}`)
-      }
-    }
-  }
-})
-*/
-
-/*
 test("element should return HTMLElement", fail => {
   if (!(element("div") instanceof HTMLElement)) {
     fail("return type is not an instance of HTMLElement")
   }
 })
 
-test("element should parse css selector", fail => {
-  const div = element("div#id.class1.class2[foo=bar][bazz=buzz]")
-  if (div.id !== "id") {
-    fail(`id is ${div.id}; want "id"`)
-  }
-
-  for (const className of ["class1", "class2"]) {
-    if (!div.classList.contains(className)) {
-      fail(`div does not contain className: ${className}`)
-    }
-  }
-
-  const attrs = {"foo": "bar", "bazz": "buzz"}
-  for (const key in attrs) {
-    const value = attrs[key]
-    if (div.getAttribute(key) !== value) {
-      fail(`div[${key}] is ${div.getAttribute(key)}; want ${value}`)
-    }
-  }
-})
-
-test("element should apply attributes", fail => {
-  const attributes = {
-    hidden: true,
-    id: "id",
-    href: "href",
-  }
-
-  const div = element("div", attributes)
-
-  for (const key in attributes) {
-    const want = attributes[key]
-    const got = key in div ? div[key] : div.getAttribute(key)
-
-    if (want !== got) fail(`div[${key}] is not ${want}, got: ${got}`)
-  }
-})
-
 test("element should append children", fail => {
   const lis = [element("li"), element("li"), element("li")]
-  const ol = element("ol", {}, ...lis)
+  const ol = element("ol", ...lis)
   for (const li of lis) {
     if (!ol.contains(li)) {
       fail("ol does not contain li")
@@ -111,18 +38,91 @@ test("element should append children", fail => {
   }
 })
 
+test("element should use ref", fail => {
+  const divRef = ref()
+  const div = element("button", {ref: divRef})
+  if (divRef.element !== div) {
+    fail("element did not use ref")
+  }
+})
+
+test("element should throw error if ref used incorrectly", fail => {
+  let error = null
+  try {
+    element("button", {ref: "abc"})
+  } catch (e) {
+    error = e
+  }
+  if (error === null) {
+    fail("error not thrown")
+  }
+})
+
+test("element should parse CSS selector", fail => {
+  const tests = {
+    "div": {type: "DIV", id: "", classes: [], selectors: {}},
+    "div#id": {type: "DIV", id: "id", classes: [], selectors: {}},
+    "div.foo": {type: "DIV", id: "", classes: ["foo"], selectors: {}},
+    "div#id.class[key='value']": {type: "DIV", id: "id", classes: ["class"], selectors: {key: "value"}},
+  }
+
+  for (const test in tests) {
+    const {type, id, classes, selectors} = tests[test]
+    const el = element(test)
+    if (el.tagName !== type) {
+      fail(`element type is: ${el.tagName}; want ${type}`)
+    }
+    if (el.id !== id) {
+      fail(`element ID is: ${el.id}; want ${id}`)
+    }
+    for (const cl of classes) {
+      if (!el.classList.contains(cl)) {
+        fail(`element missing class: ${cl}`)
+      }
+    }
+    for (const key in selectors) {
+      const want = selectors[key]
+      const got = el.getAttribute(key)
+      if (want !== got) {
+        fail(`element[${key}] = ${got}; want: ${want}`)
+      }
+    }
+  }
+})
+
 test("mount should append element", fail => {
-  const parent = element("div", { id: "test-id" })
+  const parent = element("div#test-id")
   document.body.append(parent)
 
   if (parent.children.length > 0) {
     fail("parent should have 0 children")
   }
 
-  mount("test-id", () => element("div"))
+  const child = element("div")
+  mount("test-id", () => child)
 
-  if (parent.children.length !== 1) {
-    fail("parent should have 1 child")
+  if (!parent.contains(child)) {
+    fail("parent does not contain child")
+  }
+
+  document.body.removeChild(parent)
+})
+
+test("mount should append multiple elements", fail => {
+  const parent = element("div#test-id")
+  document.body.append(parent)
+
+  if (parent.children.length > 0) {
+    fail("parent should have 0 children")
+  }
+
+  const children = [element("div"), element("div")]
+  mount("test-id", () => children)
+
+  for (const child of children) {
+    if (!parent.contains(child)) {
+      fail("parent does not contain child")
+    }
   }
 
   document.body.removeChild(parent)
@@ -137,6 +137,7 @@ test("mount should throw error if id not found", fail => {
   fail("no error thrown")
 })
 
+/*
 test("state should watch changes", fail => {
   const [onCount, setCount] = state(0)
 

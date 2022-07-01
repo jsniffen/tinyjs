@@ -61,7 +61,7 @@ const setAttribute = (element, key, value) => {
   }
 }
 
-export const parseCSSSelector = str => {
+const parseCSSSelector = str => {
   let [id, classes, attrs] = ["", [], {}]
   while (true) {
     let start = str.lastIndexOf("[")
@@ -261,6 +261,7 @@ export const router = (routes, onRoute) => {
   return container;
 };
 
+export const tests = state([])
 export const test = (name, func) => {
   const start = performance.now()
   let error = null
@@ -273,4 +274,7 @@ export const test = (name, func) => {
   const status = error === null ? "✓" : "✗"
   console.log(`${status} ${name} (${time}s)`)
   if (error) console.log(error)
+  tests[1](tests => {
+    return tests.concat([{name, error, time, status}])
+  })
 }
