@@ -1,68 +1,5 @@
-class $ {
-  constructor(func, ...on) {
-    this.func = func
-    this.on = on
-  }
-}
-
-class Reference {
-  constructor() {
-    this.element = null
-  }
-}
-
-export const $sub = (func, ...on) => {
-  return new $(func, ...on)
-}
-
-export const ref = () => {
-  return new Reference()
-}
-
-const watch = (element, on, func) => {
-  let created = [document.createTextNode("")]
-  element.append(created[0])
-
-  subscribe((...args) => {
-    let nodes = func(...args)
-    nodes = Array.isArray(nodes) ? nodes : [nodes]
-    nodes = nodes
-      .map(node => node instanceof HTMLElement ? node : document.createTextNode(node))
-      .filter(node => node !== undefined && node !== null)
-
-    if (nodes.length === 0) {
-      nodes.push(document.createTextNode(""))
-    }
-
-    for (let i = 0; i < Math.min(nodes.length, created.length); i++) {
-      if (!created[i].isEqualNode(nodes[i])) {
-        created[i].replaceWith(nodes[i])
-        created[i] = nodes[i]
-      }
-    }
-
-    if (nodes.length > created.length) {
-      const newNodes = nodes.slice(created.length)
-      created[created.length-1].after(...newNodes)
-      created = created.concat(newNodes)
-    } else {
-      created.slice(nodes.length).forEach(n => n.remove())
-      created = created.slice(0, nodes.length)
-    }
-    
-  }, ...on)
-}
-
-const setAttribute = (element, key, value) => {
-  if (key in element) {
-    element[key] = value
-  } else {
-    element.setAttribute(key, value)
-  }
-}
-
-const parseCSSSelector = str => {
-  let [id, classes, attrs] = ["", [], {}]
+export const element = (str, ...args) => {
+  let [type, id, classes, attributes] = ["", "", [], {}]
   while (true) {
     let start = str.lastIndexOf("[")
     let end = str.lastIndexOf("]")
@@ -73,7 +10,7 @@ const parseCSSSelector = str => {
       if (value[0] === "'" || value[0] === "\"") {
         value = value.slice(1, -1)
       }
-      attrs[key] = value
+      attributes[key] = value
       str = str.slice(0, start)
       continue
     } 
@@ -92,8 +29,45 @@ const parseCSSSelector = str => {
       continue
     }
 
-    return [str, id, classes, attrs]
+    type = str
+    break
   }
+
+  const element = document.createElement(type)
+  if (id) element.id = id
+  element.classList.add(...classes)
+  for (const key in attributes) {
+    const value = attributes[key]
+    element.setAttribute(key, value)
+  }
+
+  for (const arg of args) {
+    if (arg instanceof HTMLElement ||
+               typeof(arg) === "string" ||
+               typeof(arg) === "number") {
+      element.append(arg)
+    } else if (typeof(arg) === "object"){
+      for (const key in arg) {
+        const value = arg[key]
+        if (key === "ref") {
+          if (typeof(value) === "object" &&
+              "element" in value) {
+            value.element = element
+          } else {
+            throw new Error("Invalid reference")
+          }
+        } else{
+          if (key in element) {
+            element[key] = value
+          } else {
+            element.setAttribute(key, value)
+          }
+        }
+      }
+    }
+  }
+
+  return element
 }
 
 export const mount = (id, component) => {
@@ -102,49 +76,22 @@ export const mount = (id, component) => {
     const elements = component()
     if (Array.isArray(elements)) container.append(...elements)
     else container.append(elements)
+  } else {
+    throw new Error(`element with id: ${id} not found`)
   }
-  else throw new Error(`element with id: ${id} not found`)
 }
 
-export const element = (str, ...args) => {
-  const [type, id, classes, attrs] = parseCSSSelector(str)
-  const element = document.createElement(type)
-  if (id) element.id = id
-  element.classList.add(...classes)
-  for (const key in attrs) {
-    const value = attrs[key]
-    setAttribute(element, key, value)
+export const onMany = (func, ...onStates) => {
+  for (const onState of onStates) {
+    onState(_ => {
+      func(...onStates.map(onState => onState(null)));
+    }, true);
   }
+  func(...onStates.map(onState => onState(null)));
+};
 
-  for (const arg of args) {
-    if (arg instanceof $) {
-      watch(element, arg.on, arg.func)
-    } else if (arg instanceof HTMLElement ||
-               typeof(arg) === "string" ||
-               typeof(arg) === "number") {
-      element.append(arg)
-    } else {
-      Object.entries(arg).forEach(([key, value]) => {
-        if (value instanceof $) {
-          subscribe((...args) => {
-            setAttribute(element, key, value.func(...args))
-          }, ...value.on)
-          // value.on(s => {
-            // setAttribute(element, key, value.func(s))
-          // })
-        } else if (key === "ref") {
-          if (!(value instanceof Reference)) {
-            throw new Error("attribute ref requires a Reference instance")
-          }
-          value.element = element
-        } else{
-          setAttribute(element, key, value)
-        }
-      })
-    }
-  }
-
-  return element
+export const ref = () => {
+  return {element: null}
 }
 
 export const state = (value, name) => {
@@ -166,35 +113,18 @@ export const state = (value, name) => {
     listeners.forEach(func => func(value))
   }
 
-
-  const $state = func => {
-    return new $(func, onState)
-  }
-
-  return [onState, setState, $state]
+  return [onState, setState]
 }
 
-export const subscribe = (func, ...onStates) => {
-  for (const onState of onStates) {
-    onState(_ => {
-      func(...onStates.map(onState => onState(null)));
-    }, true);
-  }
-  func(...onStates.map(onState => onState(null)));
-};
+const [onRoute, setRoute] = state(window.location.hash);
 
 export const route = () => {
-  const [onRoute, setRoute, $route] = state(window.location.hash);
 
   window.addEventListener("popstate", () => {
     setRoute(window.location.hash);
   });
 
   const go = path => {
-    window.location = path;
-  };
-
-  const pushState = path => {
     window.history.pushState({}, "", path);
     setRoute(path);
   };
@@ -207,17 +137,11 @@ export const route = () => {
     window.history.forward();
   };
 
-  return {
-    onRoute, setRoute, $route, go, pushState, back, forward,
-  };
-};
+  return {onRoute, go, back, forward}
+}
 
-export const router = (routes, onRoute) => {
+export const router = routes => {
   const container = element("div");
-
-  if (!onRoute) {
-    onRoute = route().onRoute
-  }
 
   onRoute(path => {
     const pathParts = path.split("/")
@@ -261,7 +185,6 @@ export const router = (routes, onRoute) => {
   return container;
 };
 
-export const tests = state([])
 export const test = (name, func) => {
   const start = performance.now()
   let error = null
@@ -274,7 +197,5 @@ export const test = (name, func) => {
   const status = error === null ? "✓" : "✗"
   console.log(`${status} ${name} (${time}s)`)
   if (error) console.log(error)
-  tests[1](tests => {
-    return tests.concat([{name, error, time, status}])
-  })
+  return {name, error, time, status}
 }

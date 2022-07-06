@@ -1,4 +1,4 @@
-import {element as e, mount, ref, state, route, subscribe} from "./../../tiny.js"
+import {element as e, mount, ref, state, route, onMany} from "./../../tiny.js"
 
 const items = "tiny-todomvc" in localStorage ? JSON.parse(localStorage["tiny-todomvc"]) : []
 
@@ -83,7 +83,7 @@ mount("tiny-todomvc", () => {
 
   const html = [
     e("header.header",
-      e("h1.todos"),
+      e("h1.todos", "todos"),
       e("input.new-todo[autofocus][placeholder='What needs to be done?']", {
         onchange: e => {
           createItem(e.target.value)
@@ -126,7 +126,7 @@ mount("tiny-todomvc", () => {
     }
   })
 
-  subscribe((items, route) => {
+  onMany((items, route) => {
     if (route === "#/active") {
       items = items.filter(item => !item.done)
     } else if (route === "#/completed") {
