@@ -184,18 +184,3 @@ export const router = routes => {
 
   return container;
 };
-
-export const test = (name, func) => {
-  const start = performance.now()
-  let error = null
-  try {
-    func(msg => { throw new Error(msg) })
-  } catch (e) {
-    error = e
-  }
-  const time = ((performance.now() - start)/1000).toFixed(2)
-  const status = error === null ? "✓" : "✗"
-  console.log(`${status} ${name} (${time}s)`)
-  if (error) console.log(error)
-  return {name, error, time, status}
-}

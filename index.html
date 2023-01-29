@@ -3,7 +3,7 @@
   <head>
     <style>
       body {
-        background: #3a3b3c;
+        background: black;
         color: white;
         font-size: 2em;
         margin: 10px 100px;
@@ -12,10 +12,14 @@
       .test {}
       .test.test--pass { color: green; }
       .test.test--fail { color: red; }
+      .test.test--message {
+          font-size: 0.65em;
+          margin: 0 2em;
+      }
     </style>
   </head>
   <body>
-    <div id="tiny-test"></div>
-    <script type="module" src="tiny_test.js"></script>
+    <div id="main"></div>
+    <script type="module" src="main.js"></script>
   </body>
 </html>
