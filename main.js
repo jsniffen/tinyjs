@@ -158,6 +158,29 @@ test("mount should throw error if id not found", () => {
     return "no error thrown";
 });
 
+test("state should watch changes", () => {
+	const [onCount, setCount] = state(0);
+
+	const div = element("div");
+	onCount(count => div.textContent = count);
+
+	for (let i = 0; i < 100; i++) {
+		setCount(i);
+		if (div.textContent != i) {
+			return `div.textContent = ${div.textContent}; want ${i}`;
+		}
+	}
+});
+
+test("state should get", () => {
+	const want = 10;
+	const [onCount, setCount] = state(want);
+	const got = onCount(null);
+	if (want !== got) {
+		return `want: ${want}; got: ${got}`;
+	}
+});
+
 mount("main", () => {
     return tests.map(test => {
         const pass = test.message === undefined;
@@ -175,19 +198,6 @@ mount("main", () => {
 
 
 /*
-test("state should watch changes", fail => {
-  const [onCount, setCount] = state(0)
-
-  const div = element("div")
-  onCount(count => div.textContent = count)
-
-  for (let i = 0; i < 10; i++) {
-    setCount(i)
-    if (div.textContent != i) {
-      fail(`div.textContent = ${div.textContent}; want ${i}`)
-    }
-  }
-})
 
 test("state should defer", fail => {
   const [onCount, setCount] = state(0)
@@ -197,14 +207,6 @@ test("state should defer", fail => {
   }, true)
 })
 
-test("state should get", fail => {
-  const want = 10
-  const [onCount, setCount] = state(want)
-  const got = onCount(null)
-  if (want !== got) {
-    fail(`want: ${want}; got: ${got}`)
-  }
-})
 
 test("subscribe should only initialize once", fail => {
   const [onCount, setCount] = state(0)
