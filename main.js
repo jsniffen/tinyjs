@@ -159,9 +159,7 @@ test("mount should throw error if id not found", () => {
 });
 
 mount("main", () => {
-    const container = element("div");
-
-    tests.map(test => {
+    return tests.map(test => {
         const pass = test.message === undefined;
 
         const symbol = pass ? "✓" : "✗";
@@ -172,23 +170,8 @@ mount("main", () => {
         const message = element("div.test.test--message", test.message);
 
         return element("div", { className }, title, message);
-    }).forEach(div => container.append(div));
-
-    return container;
+    });
 });
-
-
-/*
-const tests = [
-
-
-
-
-
-
-]
-*/
-
 
 
 /*
