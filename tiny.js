@@ -84,10 +84,10 @@ export const mount = (id, component) => {
 export const onMany = (func, ...onStates) => {
   for (const onState of onStates) {
     onState(_ => {
-      func(...onStates.map(onState => onState(null)));
+      func(...onStates.map(onState => onState()));
     }, true);
   }
-  func(...onStates.map(onState => onState(null)));
+  func(...onStates.map(onState => onState()));
 };
 
 export const ref = () => {
@@ -98,7 +98,7 @@ export const state = (value, name) => {
   const listeners = []
 
   const onState = (func, defer) => {
-    if (func === null) {
+    if (!func) {
       return value
     }
     listeners.push(func)
