@@ -9,7 +9,7 @@ const test = (name, func) => {
     try {
         message = func();
     } catch (err) {
-        message = err.toString();
+        message = err.stack;
     } finally {
         const time = ((performance.now() - start)/1000).toFixed(2);
         tests.push({
@@ -181,6 +181,15 @@ test("state should get", () => {
 	}
 });
 
+test("state should defer", () => {
+	const [onCount, setCount] = state(0);
+	const div = element("div");
+
+	onCount(count => {
+        throw new Error("this callback should not run");
+	}, true);
+});
+
 mount("main", () => {
     return tests.map(test => {
         const pass = test.message === undefined;
@@ -195,64 +204,3 @@ mount("main", () => {
         return element("div", { className }, title, message);
     });
 });
-
-
-/*
-
-test("state should defer", fail => {
-  const [onCount, setCount] = state(0)
-  const div = element("div")
-  onCount(count => {
-    fail("this callback should not run")
-  }, true)
-})
-
-
-test("subscribe should only initialize once", fail => {
-  const [onCount, setCount] = state(0)
-  const [onLoading, setLoading] = state(false)
-
-  let ran = 0
-
-  subscribe((count, loading) => {
-    ran++
-    if (ran > 1) {
-      fail("subscribe initialized more than once")
-    }
-  }, onCount, onLoading)
-})
-
-test("subscribe should watch changes", fail => {
-  const [onCount, setCount] = state(0)
-  const [onLoading, setLoading] = state(false)
-
-  const div = element("div")
-
-  subscribe((count, loading) => {
-    div.textContent = count
-    div.hidden = loading
-  }, onCount, onLoading)
-
-  if (div.hidden) {
-    fail("div should not hidden")
-  }
-  if (div.textContent != 0) {
-    fail(`div.textContent = ${div.textContent}; want 0`)
-  }
-
-  setCount(1)
-  if (div.hidden) {
-    fail("div should not hidden")
-  }
-  if (div.textContent != 1) {
-    fail(`div.textContent = ${div.textContent}; want 1`)
-  }
-  setLoading(true)
-  if (!div.hidden) {
-    fail("div should be hidden")
-  }
-  if (div.textContent != 1) {
-    fail(`div.textContent = ${div.textContent}; want 1`)
-  }
-})
-*/
