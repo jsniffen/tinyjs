@@ -2,41 +2,45 @@ import {mount, element, ref, state} from "./../tiny.js"
 
 const tests = [];
 
+const fail = msg => {
+    throw new Error(msg)
+};
+
 const test = (name, func) => {
-    let message = "";
+    let error = "";
     const start = performance.now();
 
     try {
-        message = func();
+        func(fail);
     } catch (err) {
-        message = err.stack;
+        error = err.stack;
     } finally {
         const time = ((performance.now() - start)/1000).toFixed(2);
         tests.push({
             name,
             time,
-            message,
+            error,
         });
     }
 };
 
-test("element should return HTMLElement", () => {
+test("element should return HTMLElement", fail => {
     if (!(element("div") instanceof HTMLElement)) {
-        return "return type is not an instance of HTMLElement";
+        fail("return type is not an instance of HTMLElement");
     }
 });
 
-test("element should append children", () => {
+test("element should append children", fail => {
     const lis = [element("li"), element("li"), element("li")];
     const ol = element("ol", ...lis);
     for (const li of lis) {
         if (!ol.contains(li)) {
-            return "ol does not contain li";
+            fail("ol does not contain li");
         }
     }
 });
 
-test("element should set attributes", () => {
+test("element should set attributes", fail => {
     const attributes = {
         id: "id",
         foo: "bar",
@@ -49,25 +53,25 @@ test("element should set attributes", () => {
         const value = attributes[key];
         if (key in div) {
             if (div[key] !== value) {
-                return `div[${key}] is ${div[key]}; want ${value}`;
+                fail(`div[${key}] is ${div[key]}; want ${value}`);
             }
         } else {
             if (value !== div.getAttribute(key, value)) {
-                return `div.getAttribute(${key}) is ${div.getAttribute(key)}; want ${value}`;
+                fail(`div.getAttribute(${key}) is ${div.getAttribute(key)}; want ${value}`);
             }
         }
     }
 });
 
-test("element should use ref", () => {
+test("element should use ref", fail => {
     const divRef = ref();
     const div = element("button", {ref: divRef});
     if (divRef.element !== div) {
-        return "element did not use ref";
+        fail("element did not use ref");
     }
 });
 
-test("element should throw error if ref used incorrectly", () => {
+test("element should throw error if ref used incorrectly", fail => {
     let error = null;
     try {
         element("button", {ref: "abc"});
@@ -75,11 +79,11 @@ test("element should throw error if ref used incorrectly", () => {
         error = e;
     }
     if (error === null) {
-        return "error not thrown";
+        fail("error not thrown");
     }
 });
 
-test("element should parse CSS selector", () => {
+test("element should parse CSS selector", fail => {
     const tests = {
         "div": {type: "DIV", id: "", classes: [], selectors: {}},
         "div#id": {type: "DIV", id: "id", classes: [], selectors: {}},
@@ -91,50 +95,50 @@ test("element should parse CSS selector", () => {
         const {type, id, classes, selectors} = tests[test];
         const el = element(test)
         if (el.tagName !== type) {
-            return `element type is: ${el.tagName}; want ${type}`;
+            fail(`element type is: ${el.tagName}; want ${type}`);
         }
         if (el.id !== id) {
-            return `element ID is: ${el.id}; want ${id}`;
+            fail(`element ID is: ${el.id}; want ${id}`);
         }
         for (const cl of classes) {
             if (!el.classList.contains(cl)) {
-                return `element missing class: ${cl}`;
+                fail(`element missing class: ${cl}`);
             }
         }
         for (const key in selectors) {
             const want = selectors[key];
             const got = el.getAttribute(key);
             if (want !== got) {
-                return `element[${key}] = ${got}; want: ${want}`;
+                fail(`element[${key}] = ${got}; want: ${want}`);
             }
         }
     }
 });
 
-test("mount should append element", () => {
+test("mount should append element", fail => {
     const parent = element("div#test-id");
     document.body.append(parent);
 
     if (parent.children.length > 0) {
-        return "parent should have 0 children";
+        fail("parent should have 0 children");
     }
 
     const child = element("div");
     mount("test-id", () => child);
 
     if (!parent.contains(child)) {
-        return ("parent does not contain child");
+        fail("parent does not contain child");
     }
 
     document.body.removeChild(parent)
 });
 
-test("mount should append multiple elements", () => {
+test("mount should append multiple elements", fail => {
     const parent = element("div#test-id");
     document.body.append(parent);
 
     if (parent.children.length > 0) {
-        return "parent should have 0 children";
+        fail("parent should have 0 children");
     }
 
     const children = [element("div"), element("div")];
@@ -142,36 +146,36 @@ test("mount should append multiple elements", () => {
 
     for (const child of children) {
         if (!parent.contains(child)) {
-            return "parent does not contain child";
+            fail("parent does not contain child");
         }
     }
 
     document.body.removeChild(parent);
 });
 
-test("mount should append a single raw element", () => {
+test("mount should append a single raw element", fail => {
     const parent = element("div#test-id");
     document.body.append(parent);
 
     if (parent.children.length > 0) {
-        return "parent should have 0 children";
+        fail("parent should have 0 children");
     }
 
     const child = element("div");
     mount("test-id", child);
     if (!parent.contains(child)) {
-        return "parent does not contain child";
+        fail("parent does not contain child");
     }
 
     document.body.removeChild(parent);
 });
 
-test("mount should append multiple raw elements", () => {
+test("mount should append multiple raw elements", fail => {
     const parent = element("div#test-id");
     document.body.append(parent);
 
     if (parent.children.length > 0) {
-        return "parent should have 0 children";
+        fail("parent should have 0 children");
     }
 
     const children = [element("div"), element("div")];
@@ -179,23 +183,23 @@ test("mount should append multiple raw elements", () => {
 
     for (const child of children) {
         if (!parent.contains(child)) {
-            return "parent does not contain child";
+            fail("parent does not contain child");
         }
     }
 
     document.body.removeChild(parent);
 });
 
-test("mount should throw error if id not found", () => {
+test("mount should throw error if id not found", fail => {
     try {
         mount("bad-id", () => element("div"));
     } catch (_) {
         return;
     }
-    return "no error thrown";
+    fail("no error thrown");
 });
 
-test("state should watch changes", () => {
+test("state should watch changes", fail => {
 	const [onCount, setCount] = state(0);
 
 	const div = element("div");
@@ -204,40 +208,47 @@ test("state should watch changes", () => {
 	for (let i = 0; i < 100; i++) {
 		setCount(i);
 		if (div.textContent != i) {
-			return `div.textContent = ${div.textContent}; want ${i}`;
+			fail(`div.textContent = ${div.textContent}; want ${i}`);
 		}
 	}
 });
 
-test("state should get", () => {
+test("state should get", fail => {
 	const want = 10;
 	const [onCount, setCount] = state(want);
 	const got = onCount(null);
 	if (want !== got) {
-		return `want: ${want}; got: ${got}`;
+		fail(`want: ${want}; got: ${got}`);
 	}
 });
 
-test("state should defer", () => {
+test("state should defer", fail => {
 	const [onCount, setCount] = state(0);
 	const div = element("div");
 
 	onCount(count => {
-        throw new Error("this callback should not run");
+        fail("this callback should not run");
 	}, true);
 });
 
 mount("main", () => {
     return tests.map(test => {
-        const pass = test.message === undefined;
+        const pass = test.error === "";
 
         const symbol = pass ? "✓" : "✗";
         const className =  pass ? "test test--pass" : "test test--fail";
 
         const title = `${symbol} ${test.name} (${test.time}s)`;
         
-        const message = element("div.test.test--message", test.message);
+        // Rewrite the error message to be pretty.
+        if (test.error) {
+            const lines = test.error.split("\n");
+            const message = lines[0].replace("Error: ", "");
+            const line = lines[2].split("/").at(-1).split(":").slice(0, 2).join(":");
+            test.error = `${line}: ${message}`
+        }
+        const error = element("div.test.test--error", test.error);
 
-        return element("div", { className }, title, message);
+        return element("div", { className }, title, error);
     });
 });
