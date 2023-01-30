@@ -59,11 +59,11 @@ export const sections = [
 					onclick: () => setCount(0),
 				}, "Reset to 0");
 
-				const status = e("div", "Count: 0");
+				const status = e("div");
 
 				onCount(count => {
 					status.textContent = `Count: ${count}`;
-				}, status);
+				});
 
 				return [status, addOne, subtractOne, reset];
 			});
