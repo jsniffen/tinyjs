@@ -1,4 +1,4 @@
-import {mount, element, ref, state} from "./tiny.js"
+import {mount, element, ref, state} from "./../tiny.js"
 
 const tests = [];
 

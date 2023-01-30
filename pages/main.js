@@ -99,7 +99,7 @@ const content = () => {
   return div
 }
 
-mount("tiny-app", () => {
+mount("main", () => {
   return element("div", {
     className: "flex flex-row"
   },
