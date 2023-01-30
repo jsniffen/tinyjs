@@ -149,6 +149,43 @@ test("mount should append multiple elements", () => {
     document.body.removeChild(parent);
 });
 
+test("mount should append a single raw element", () => {
+    const parent = element("div#test-id");
+    document.body.append(parent);
+
+    if (parent.children.length > 0) {
+        return "parent should have 0 children";
+    }
+
+    const child = element("div");
+    mount("test-id", child);
+    if (!parent.contains(child)) {
+        return "parent does not contain child";
+    }
+
+    document.body.removeChild(parent);
+});
+
+test("mount should append multiple raw elements", () => {
+    const parent = element("div#test-id");
+    document.body.append(parent);
+
+    if (parent.children.length > 0) {
+        return "parent should have 0 children";
+    }
+
+    const children = [element("div"), element("div")];
+    mount("test-id", ...children);
+
+    for (const child of children) {
+        if (!parent.contains(child)) {
+            return "parent does not contain child";
+        }
+    }
+
+    document.body.removeChild(parent);
+});
+
 test("mount should throw error if id not found", () => {
     try {
         mount("bad-id", () => element("div"));

@@ -70,15 +70,20 @@ export const element = (str, ...args) => {
   return element
 }
 
-export const mount = (id, component) => {
-  const container = document.getElementById(id)
-  if (container) {
-    const elements = component()
-    if (Array.isArray(elements)) container.append(...elements)
-    else container.append(elements)
-  } else {
-    throw new Error(`element with id: ${id} not found`)
-  }
+export const mount = (id, arg, ...args) => {
+	const container = document.getElementById(id);
+	if (container) {
+		if (typeof(arg) === "function") {
+			const elements = arg();
+			if (Array.isArray(elements)) container.append(...elements);
+			else container.append(elements);
+		} else if (typeof(arg) === "object" && arg instanceof HTMLElement) {
+			container.append(arg);
+			if (args) container.append(...args);
+		}
+	} else {
+		throw new Error(`element with id: ${id} not found`)
+	}
 }
 
 export const onMany = (func, ...onStates) => {

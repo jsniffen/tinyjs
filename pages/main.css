@@ -10,6 +10,10 @@ body {
     margin: 0;
 }
 
+button {
+    margin-right: 5px;
+}
+
 .header {
   font-weight: bold;
   font-size: 2em;
@@ -82,4 +86,8 @@ body {
   flex-grow: 1;
   width: 100%;
   padding: 25px;
+}
+
+.style--bold {
+    font-weight: bold;
 }
