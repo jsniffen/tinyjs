@@ -1,15 +1,15 @@
-import {element as e, mount, ref, state, route, $sub} from "./../../tiny.js"
+import {element as e, mount, ref, state, route, onMany} from "./../../tiny.js"
 
 const items = "tiny-todomvc" in localStorage ? JSON.parse(localStorage["tiny-todomvc"]) : []
-
-const [onItems, setItems, $items] = state(items)
-
+const [onItems, setItems] = state(items)
 onItems(items => {
   localStorage["tiny-todomvc"] = JSON.stringify(items)
-})
+});
 
-const {onRoute, $route} = route()
-onRoute(console.log)
+const [onShowing, setShowing] = state(window.location.hash);
+window.addEventListener("popstate", () => {
+  setShowing(window.location.hash);
+});
 
 const createItem = text => {
   setItems(items => items.concat([{done: false, text}]))
@@ -41,16 +41,6 @@ const updateItemText = (item, text) => {
   }))
 }
 
-const getItems = (items, route) => {
-  if (route === "#/active") {
-    return items.filter(i => !i.done)
-  } else if (route === "#/completed") {
-    return items.filter(i => i.done)
-  } else {
-    return items
-  }
-}
-
 const item = item => {
   const input = ref()
   const li = ref()
@@ -78,9 +68,12 @@ const item = item => {
 }
 
 mount("tiny-todomvc", () => {
-  return [
+  const [todoCount, todoList] = [ref(), ref()]
+  const [all, active, completed] = [ref(), ref(), ref()]
+
+  const html = [
     e("header.header",
-      e("h1.todos"),
+      e("h1.todos", "todos"),
       e("input.new-todo[autofocus][placeholder='What needs to be done?']", {
         onchange: e => {
           createItem(e.target.value)
@@ -91,28 +84,46 @@ mount("tiny-todomvc", () => {
     e("section.main",
       e("input#toggle-all.toggle-all[type=checkbox]", {onclick: toggleAllDone}),
       e("label[for='toggle-all']", "Mark all as complete"),
-      e("ul.todo-list", $sub((items, route) => getItems(items, route).map(item), onItems, onRoute)),
+      e("ul.todo-list", {ref: todoList}),
     ),
     e("footer.footer",
-      e("span.todo-count", $items(items => {
-        const remaining = items.filter(i => !i.done).length
-        return [
-          e("strong", remaining),
-          ` item${remaining === 1 ? "" : "s"} left`
-        ]
-      })),
+      e("span.todo-count", {ref: todoCount}),
       e("ul.filters",
-        e("li", e("a[href='/examples/todomvc/#']", {
-          className: $route(route => route === "" ? "selected" : "")
-        }, "All")),
-        e("li", e("a[href='/examples/todomvc/#/active']", {
-          className: $route(route => route === "#/active" ? "selected" : "")
-        }, "Active")),
-        e("li", e("a[href='/examples/todomvc/#/completed']", {
-          className: $route(route => route === "#/completed" ? "selected" : "")
-        }, "Completed")),
+        e("li", e("a[href='#/']", {ref: all}, "All")),
+        e("li", e("a[href='#/active']", {ref: active}, "Active")),
+        e("li", e("a[href='#/completed']", {ref: completed}, "Completed")),
       ),
       e("button.clear-completed", {onclick: deleteDoneItems}, "Clear Completed"),
     )
   ]
+
+  onItems(items => {
+    const count = items.filter(item => !item.done).length
+    todoCount?.element?.replaceChildren(
+      e("strong", count),
+      ` ${count === 1 ? "item" : "items"} left`,
+    )
+  })
+
+  onShowing(showing => {
+    [all, active, completed].forEach(n => n?.element?.classList?.remove("selected"))
+    if (showing === "#/active") {
+      active?.element?.classList.add("selected")
+    } else if (showing === "#/completed") {
+      completed?.element?.classList.add("selected")
+    } else {
+      all?.element?.classList.add("selected")
+    }
+  });
+
+  onMany((items, showing) => {
+    if (showing === "#/active") {
+      items = items.filter(item => !item.done)
+    } else if (showing === "#/completed") {
+      items = items.filter(item => item.done)
+    }
+    todoList?.element?.replaceChildren(...items.map(item))
+  }, onItems, onShowing)
+
+  return html
 })
