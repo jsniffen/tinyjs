@@ -1,4 +1,4 @@
-import {element as e, mount, ref, state, route, onMany} from "./../../tiny.js"
+import {element as e, mount, ref, state, onMany} from "./../../tiny.js"
 
 const items = "tiny-todomvc" in localStorage ? JSON.parse(localStorage["tiny-todomvc"]) : []
 const [onItems, setItems] = state(items)
@@ -46,7 +46,7 @@ const item = item => {
   const li = ref()
 
   return (
-    e("li", {ref: li, className: item.done ? "completed" : ""},
+    e("li", {li, className: item.done ? "completed" : ""},
       e("div.view",
         e("input.toggle[type='checkbox']", {checked: item.done, onclick: () => toggleItemDone(item)}),
         e("label", {
@@ -58,7 +58,7 @@ const item = item => {
         e("button.destroy", {onclick: () => deleteItem(item)}),
       ),
       e("input.edit", {
-        ref: input,
+        input,
         value: item.text,
         onchange: e => updateItemText(item, e.target.value),
         onblur: () => li.element.classList.toggle("editing"),
@@ -84,14 +84,14 @@ mount("tiny-todomvc", () => {
     e("section.main",
       e("input#toggle-all.toggle-all[type=checkbox]", {onclick: toggleAllDone}),
       e("label[for='toggle-all']", "Mark all as complete"),
-      e("ul.todo-list", {ref: todoList}),
+      e("ul.todo-list", {todoList}),
     ),
     e("footer.footer",
-      e("span.todo-count", {ref: todoCount}),
+      e("span.todo-count", {todoCount}),
       e("ul.filters",
-        e("li", e("a[href='#/']", {ref: all}, "All")),
-        e("li", e("a[href='#/active']", {ref: active}, "Active")),
-        e("li", e("a[href='#/completed']", {ref: completed}, "Completed")),
+        e("li", e("a[href='#/']", {all}, "All")),
+        e("li", e("a[href='#/active']", {active}, "Active")),
+        e("li", e("a[href='#/completed']", {completed}, "Completed")),
       ),
       e("button.clear-completed", {onclick: deleteDoneItems}, "Clear Completed"),
     )

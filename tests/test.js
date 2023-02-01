@@ -1,4 +1,4 @@
-import {mount, element, ref, state} from "./../tiny.js"
+import {mount, element, ref, state, router} from "./../tiny.js";
 
 const tests = [];
 
@@ -68,18 +68,6 @@ test("element should use ref", fail => {
 	const div = element("button", {ref: divRef});
 	if (divRef.element !== div) {
 		fail("element did not use ref");
-	}
-});
-
-test("element should throw error if ref used incorrectly", fail => {
-	let error = null;
-	try {
-		element("button", {ref: "abc"});
-	} catch (e) {
-		error = e;
-	}
-	if (error === null) {
-		fail("error not thrown");
 	}
 });
 
@@ -229,6 +217,36 @@ test("state should defer", fail => {
 	onCount(count => {
 		fail("this callback should not run");
 	}, true);
+});
+
+test("router", fail => {
+	const a = element("div", "one");
+	const b = element("div", "one");
+	const c = element("div", "one");
+	const parent = router({
+		"/a": () => a,
+		"/b": () => b,
+		"*": () => c,
+	});
+
+	if (!parent.contains(c)) {
+		fail("parent does not contain c");
+	}
+
+	window.location.href = "#/a";
+	if (!parent.contains(a)) {
+		fail("parent does not contain a");
+	}
+
+	window.location.href = "#/b";
+	if (!parent.contains(b)) {
+		fail("parent does not contain b");
+	}
+
+	window.location.hash = "";
+	if (!parent.contains(c)) {
+		fail("parent does not contain c");
+	}
 });
 
 mount("main", () => {

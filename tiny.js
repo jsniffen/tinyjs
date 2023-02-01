@@ -1,73 +1,70 @@
+function TinyReference() {
+	this.element = null;
+}
+
 export const element = (str, ...args) => {
-  let [type, id, classes, attributes] = ["", "", [], {}]
-  while (true) {
-    let start = str.lastIndexOf("[")
-    let end = str.lastIndexOf("]")
-    if (start !== -1 && end !== -1) {
-      const selector = str.slice(start+1, end)
-      let [key, value] = selector.split("=")
-      value = value ?? true
-      if (value[0] === "'" || value[0] === "\"") {
-        value = value.slice(1, -1)
-      }
-      attributes[key] = value
-      str = str.slice(0, start)
-      continue
-    } 
+	let [type, id, classes, attributes] = ["", "", [], {}];
+	while (true) {
+		let start = str.lastIndexOf("[");
+		let end = str.lastIndexOf("]");
+		if (start !== -1 && end !== -1) {
+			const selector = str.slice(start+1, end);
+			let [key, value] = selector.split("=");
+			value = value ?? true;
+			if (value[0] === "'" || value[0] === "\"") {
+				value = value.slice(1, -1);
+			}
+			attributes[key] = value;
+			str = str.slice(0, start);
+			continue;
+		}
 
-    start = str.lastIndexOf(".")
-    if (start != -1) {
-      classes.push(str.slice(start+1))
-      str = str.slice(0, start)
-      continue
-    }
+		start = str.lastIndexOf(".");
+		if (start != -1) {
+			classes.push(str.slice(start+1));
+			str = str.slice(0, start);
+			continue;
+		}
 
-    start = str.lastIndexOf("#")
-    if (start != -1) {
-      id = str.slice(start+1)
-      str = str.slice(0, start)
-      continue
-    }
+		start = str.lastIndexOf("#");
+		if (start != -1) {
+			id = str.slice(start+1);
+			str = str.slice(0, start);
+			continue;
+		}
 
-    type = str
-    break
-  }
+		type = str;
+		break;
+	}
 
-  const element = document.createElement(type)
-  if (id) element.id = id
-  element.classList.add(...classes)
-  for (const key in attributes) {
-    const value = attributes[key]
-    element.setAttribute(key, value)
-  }
+	const element = document.createElement(type);
+	if (id) element.id = id;
+	element.classList.add(...classes);
+	for (const key in attributes) {
+		const value = attributes[key];
+		element.setAttribute(key, value);
+	}
 
-  for (const arg of args) {
-    if (arg instanceof HTMLElement ||
-               typeof(arg) === "string" ||
-               typeof(arg) === "number") {
-      element.append(arg)
-    } else if (typeof(arg) === "object"){
-      for (const key in arg) {
-        const value = arg[key]
-        if (key === "ref") {
-          if (typeof(value) === "object" &&
-              "element" in value) {
-            value.element = element
-          } else {
-            throw new Error("Invalid reference")
-          }
-        } else{
-          if (key in element) {
-            element[key] = value
-          } else {
-            element.setAttribute(key, value)
-          }
-        }
-      }
-    }
-  }
+	for (const arg of args) {
+		if (arg instanceof HTMLElement|| typeof(arg) === "string" || typeof(arg) === "number") {
+			element.append(arg);
+		} else if (typeof(arg) === "object"){
+			for (const key in arg) {
+				const value = arg[key];
+				if (value instanceof TinyReference) {
+					value.element = element;
+				} else {
+					if (key in element) {
+						element[key] = value;
+					} else {
+						element.setAttribute(key, value);
+					}
+				}
+			}
+		}
+	}
 
-  return element
+	return element;
 }
 
 export const mount = (id, arg, ...args) => {
@@ -96,8 +93,8 @@ export const onMany = (func, ...onStates) => {
 };
 
 export const ref = () => {
-  return {element: null}
-}
+	return new TinyReference();
+};
 
 export const state = (value, name) => {
   const listeners = []
@@ -121,71 +118,53 @@ export const state = (value, name) => {
   return [onState, setState]
 }
 
-const [onRoute, setRoute] = state(window.location.hash);
-
-export const route = () => {
-
-  window.addEventListener("popstate", () => {
-    setRoute(window.location.hash);
-  });
-
-  const go = path => {
-    window.history.pushState({}, "", path);
-    setRoute(path);
-  };
-
-  const back = () => {
-    window.history.back();
-  };
-
-  const forward = () => {
-    window.history.forward();
-  };
-
-  return {onRoute, go, back, forward}
-}
-
 export const router = routes => {
-  const container = element("div");
+	const container = element("div");
 
-  onRoute(path => {
-    const pathParts = path.split("/")
-      .filter(part => part !== "" && part !== "#");
+	const parsePath = () => {
+		const path = window.location.hash;
 
-    for (const route in routes) {
-      const routeParts = route.split("/")
-        .filter(part => part !== "" && part !== "#");
+		const pathParts = path.split("/")
+		  .filter(part => part !== "" && part !== "#");
 
-      if (routeParts[0] === "*") {
-        container.replaceChildren(routes[route]());
-        return;
-      }
+		for (const route in routes) {
+		  const routeParts = route.split("/")
+			.filter(part => part !== "" && part !== "#");
 
-      if (pathParts.length !== routeParts.length) continue;
+		  if (routeParts[0] === "*") {
+			container.replaceChildren(routes[route]());
+			return;
+		  }
 
-      const args = {};
+		  if (pathParts.length !== routeParts.length) continue;
 
-      let match = true;
-      for (let i = 0; i < routeParts.length; i++) {
-        const routePart = routeParts[i];
-        if (routePart.length == 0) break;
+		  const args = {};
 
-        if (routePart[0] == "*") {
-          continue
-        } else if (routePart[0] == ":") {
-          args[routePart.substring(1, routePart.length)] = pathParts[i];
-        } else if (routeParts[i] !== pathParts[i]) {
-          match = false;
-          break;
-        }
-      }
+		  let match = true;
+		  for (let i = 0; i < routeParts.length; i++) {
+			const routePart = routeParts[i];
+			if (routePart.length == 0) break;
 
-      if (match) {
-        container.replaceChildren(routes[route](args));
-        return;
-      }
-    }
-  });
+			if (routePart[0] == "*") {
+			  continue
+			} else if (routePart[0] == ":") {
+			  args[routePart.substring(1, routePart.length)] = pathParts[i];
+			} else if (routeParts[i] !== pathParts[i]) {
+			  match = false;
+			  break;
+			}
+		  }
 
-  return container;
+		  if (match) {
+			container.replaceChildren(routes[route](args));
+			return;
+		  }
+		}
+	}
+
+	window.onpopstate = parsePath;
+
+	parsePath();
+
+	return container;
 };
