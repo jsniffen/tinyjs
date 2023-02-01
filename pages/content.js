@@ -1,4 +1,4 @@
-import { element as e, mount, state, route, router } from "./../tiny.js";
+import { element as e, mount, state, router } from "./../tiny.js";
 
 export const sections = [
 	{
@@ -42,31 +42,34 @@ export const sections = [
 		link: "#/state",
 		divId: "my-counter",
 		code: () => {
-			// import { element as e, mount, state } from "./tiny.js"
+			// import { element as e, mount, state } from "./tiny.js";
 			//
-			mount("my-counter", () => {
-				const [onCount, setCount] = state(0);
+			const [onCount, setCount] = state(0);
 
-				const addOne = e("button", {
-					onclick: () => setCount(count => count + 1),
-				}, "Add 1");
+			const addOne = e("button", {
+				onclick: () => setCount(count => count + 1),
+			}, "Add 1");
 
-				const subtractOne = e("button", {
-					onclick: () => setCount(count => count - 1),
-				}, "Subtract 1");
+			const subtractOne = e("button", {
+				onclick: () => setCount(count => count - 1),
+			}, "Subtract 1");
 
-				const reset = e("button", {
-					onclick: () => setCount(0),
-				}, "Reset to 0");
+			const reset = e("button", {
+				onclick: () => setCount(0),
+			}, "Reset to 0");
 
-				const status = e("div");
+			const status = e("div");
 
-				onCount(count => {
-					status.textContent = `Count: ${count}`;
-				});
-
-				return [status, addOne, subtractOne, reset];
+			onCount(count => {
+				status.textContent = `Count: ${count}`;
 			});
+
+			mount("my-counter", 
+				addOne,
+				subtractOne,
+				reset,
+				status,
+			);
 		},
 	},
 ];
