@@ -219,7 +219,19 @@ test("state should defer", fail => {
 	}, true);
 });
 
-test("router", fail => {
+test("ref should use query", fail => {
+	const a = ref("div#main")
+	if (!a.element) {
+		fail("element should not be null");
+	}
+
+	const b = ref()
+	if (b.element) {
+		fail("element should be null");
+	}
+});
+
+test("router should route", fail => {
 	const a = element("div", "one");
 	const b = element("div", "one");
 	const c = element("div", "one");

@@ -92,8 +92,12 @@ export const onMany = (func, ...onStates) => {
   func(...onStates.map(onState => onState()));
 };
 
-export const ref = () => {
-	return new TinyReference();
+export const ref = query => {
+	const tr = new TinyReference();
+	if (query) {
+		tr.element = document.querySelector(query);
+	}
+	return tr;
 };
 
 export const state = (value, name) => {
