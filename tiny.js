@@ -84,12 +84,12 @@ export const mount = (id, arg, ...args) => {
 }
 
 export const onMany = (func, ...onStates) => {
-  for (const onState of onStates) {
-    onState(_ => {
-      func(...onStates.map(onState => onState()));
-    }, true);
-  }
-  func(...onStates.map(onState => onState()));
+	for (const onState of onStates) {
+		onState(_ => {
+			func(...onStates.map(onState => onState()));
+		}, true);
+	}
+	func(...onStates.map(onState => onState()));
 };
 
 export const ref = query => {
@@ -101,26 +101,26 @@ export const ref = query => {
 };
 
 export const state = (value, name) => {
-  const listeners = []
+	const listeners = [];
 
-  const onState = (func, defer) => {
-    if (!func) {
-      return value
-    }
-    listeners.push(func)
-    if (!defer) {
-      func(value)
-    }
-  }
+	const onState = (func, defer) => {
+		if (!func) {
+			return value;
+		}
+		listeners.push(func);
+		if (!defer) {
+			func(value);
+		}
+	}
 
-  const setState = func => {
-    const result = typeof func === "function" ? func(value) : func
-    if (result !== undefined) value = result
-    listeners.forEach(func => func(value))
-  }
+	const setState = func => {
+		const result = typeof func === "function" ? func(value) : func;
+		if (result !== undefined) value = result;
+		listeners.forEach(func => func(value));
+	}
 
-  return [onState, setState]
-}
+	return [onState, setState];
+};
 
 export const router = routes => {
 	const container = element("div");
